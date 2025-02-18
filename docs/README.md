@@ -1,27 +1,33 @@
-## Project Specification and Documentation
+# Project Specification and Documentation
 
-### Project proposal
+## Project proposal
 
-**Topic:** videostreaming client-server app
+**Topic:** HTTP server library
 
-In our scenario we can imagine 3 entities:
- 1. video encoder
- 2. video-optimized HTTP storage server
- 3. video player (client)
+### Rough idea
 
-Nice feature would be, that the server could provide data that had just been written to it. The video could be streamed to other users even though it hasn't been fully uploaded.
+Implement a C++ library providing public API to create and run HTTP server with custom options
 
-Server be **read heavy**. Support thousands of video players.
+### HTTP protocol
+ - 
 
-#### Implementation should contain
- 1. **HTTP PUT**
-    - correct writing of data to a given URL
-    - written data should be ready for GET method
-    - support for *Transfer-Encoding: chunked*
- 2. **HTTP GET**
-    - corrent download from given URL
-    - support for *Transfer-Encoding" chunked*
- 3. **HTTP DELETE**
-    - remove file at give URL
+### Features
 
-The project could be simplified by using additional libraries, but I have to do additional research for that. Something like **ffmpeg** could come in handy when developing the video encoder.
+#### Basic internal
+
+These are the must-have features to even claim it is a HTTP server.
+
+ 1. Handle HTTP requests
+    - accept incoming connections on a specified port
+    - parse and process HTTP requests
+ 2. Serve static files
+    - read files from a **public directory** and send them as responses
+    - support for common **MIME types** (`.html`, `.css`, ...)
+ 3. Respond with HTTP headers
+    - return an appropriate **HTTP status code**
+
+#### API 
+
+### Dependencies
+
+ 1. `sys/socket.h`
