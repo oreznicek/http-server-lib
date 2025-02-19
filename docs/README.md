@@ -6,14 +6,14 @@
 
 ### Rough idea
 
-Implement a C++ library providing public API to create and run HTTP server with custom options
+Implement a C++ library providing public API to create and run HTTP server with custom options described [here](#api)
 
 ### HTTP protocol
  - 
 
 ### Features
 
-#### Basic internal
+#### Basic
 
 These are the must-have features to even claim it is a HTTP server.
 
@@ -25,9 +25,24 @@ These are the must-have features to even claim it is a HTTP server.
     - support for common **MIME types** (`.html`, `.css`, ...)
  3. Respond with HTTP headers
     - return an appropriate **HTTP status code**
+ 4. Support persistent connections
+    - Connection: keep-alive
+ 5. Run as a Linux service
 
-#### API 
+#### Customizable
+
+Features that can be enabled/disabled, used/ignored by the library user.
+
+ 6. Custom routing
+    - Map URLs to files or custom handler functions
+ 7. Custom error pages
+    - Map errors to individual custom HTML files
+ 8. Directory listing
+    - List a directory content when an `index.html` file is missing
+ 9. Logging
+    - Log requests, errors and server activity
 
 ### Dependencies
 
  1. `sys/socket.h`
+ 2. `winsock2.h`
