@@ -23,21 +23,28 @@ These are the must-have features to even claim it is a HTTP server.
  4. Support persistent connections
     - Connection: keep-alive
  5. Run as a background service (daemon)
+ 6. Concurrency
+    - cache incoming client requests
+    - push request into queue (so we can process them in order)
+    - use worker `std::thread` pool
+    - assign request to a free worker thread (when available otherwise wait)
+    - ensure synchronization
 
 #### Customizable
 
 Features that can be enabled/disabled, used/ignored by the library user.
 
- 6. Custom routing
+ 7. Custom routing
     - Map URLs to files or define custom handler functions
- 7. Custom error pages
+ 8. Custom error pages
     - Map errors to individual custom HTML files
- 8. Directory listing
+ 9. Directory listing
     - List a directory content when an `index.html` file is missing
- 9. Logging
+ 10. Logging
     - Log requests, errors and server activity
 
 ### Dependencies
 
- 1. `sys/socket.h`
- 2. `winsock2.h`
+ 1. `<thread>`
+ 2. `sys/socket.h`
+ 3. `winsock2.h`
