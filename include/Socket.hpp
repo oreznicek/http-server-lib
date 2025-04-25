@@ -2,14 +2,14 @@
 #define _SOCKET_HPP
 
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <string>
 
 #include "SocketAddr.hpp"
 
 enum class ProtocolFamily {
     IPV4 = AF_INET,
-    IPV6 = AF_INET6
+    IPV6 = AF_INET6,
+    DUAL_STACK
 };
 
 enum class SocketType {
@@ -37,9 +37,14 @@ public:
 };
 
 class ServerSocket : public Socket {
+    ServerSocket();
+    ServerSocket(ProtocolFamily prot_fam, SocketType type, SocketAddr&& sock_addr);
 public:
-    ServerSocket(ProtocolFamily prot_fam, SocketType type, const SocketAddr& sock_addr);
-    ClientSocket accept_connection(SocketAddr& sock_addr);
+    ServerSocket(SocketType type, SocketAddr4&& sock_addr);
+    ServerSocket(SocketType type, SocketAddr6&& sock_addr);
+    ServerSocket(SocketType type, SocketAddr46&& sock_addr);
+    ClientSocket accept_connection(SocketAddr& sock_addr) const;
+    friend class HttpServer;
 };
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef ARG_PARSER_HPP_
-#define ARG_PARSER_HPP_
+#ifndef _ARG_PARSER_HPP
+#define _ARG_PARSER_HPP
 
 class ArgParser {
 };
