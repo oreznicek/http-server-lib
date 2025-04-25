@@ -24,6 +24,7 @@ public:
     HttpServer build();
     friend class HttpServer;
 };
+
 class HttpServer {
     ServerSocket ssock;
     // ClientRequestParser req_parser;

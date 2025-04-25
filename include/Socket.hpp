@@ -43,6 +43,9 @@ public:
     ServerSocket(SocketType type, SocketAddr4&& sock_addr);
     ServerSocket(SocketType type, SocketAddr6&& sock_addr);
     ServerSocket(SocketType type, SocketAddr46&& sock_addr);
+
+    ServerSocket& operator=(ServerSocket&& other) noexcept;
+
     ClientSocket accept_connection(SocketAddr& sock_addr) const;
     friend class HttpServer;
 };

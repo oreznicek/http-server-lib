@@ -6,8 +6,9 @@
 
 #include "Socket.hpp"
 
+constexpr int INVALID_SOCKET_FD = -1;
+
 Socket::Socket(ProtocolFamily prot_fam, SocketType type) {
-    std::cout << "Socket constructor running" << std::endl;
     constexpr int SELECT_DEFAULT_PROTOCOL = 0;
     socket_fd = socket((int)prot_fam, (int)type, SELECT_DEFAULT_PROTOCOL);
     if (socket_fd == -1) {
@@ -16,21 +17,20 @@ Socket::Socket(ProtocolFamily prot_fam, SocketType type) {
 }
 
 Socket::Socket(int fd) : socket_fd(fd) {
-    std::cout << "Socket fd constructor" << std::endl;
 }
 
 Socket::~Socket() {
-    std::cout << "Closed socket: " << socket_fd << std::endl;
-    if (close(socket_fd) == -1) {
+    if (socket_fd == INVALID_SOCKET_FD) {
+        return;
+    } else if (close(socket_fd) == -1) {
         throw std::runtime_error("close() failed");
     }
 }
 
-ServerSocket::ServerSocket() : Socket(-1) {
+ServerSocket::ServerSocket() : Socket(INVALID_SOCKET_FD) {
 }
 
 ServerSocket::ServerSocket(ProtocolFamily prot_fam, SocketType type, SocketAddr&& sock_addr) : Socket(prot_fam == ProtocolFamily::DUAL_STACK ? ProtocolFamily::IPV6 : prot_fam, type) {
-    std::cout << "ServerSocket constructor running" << std::endl;
     if (prot_fam == ProtocolFamily::IPV6) {
         int on = 1;
         setsockopt(socket_fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
@@ -42,7 +42,6 @@ ServerSocket::ServerSocket(ProtocolFamily prot_fam, SocketType type, SocketAddr&
     if (::listen(socket_fd, SOMAXCONN) == -1) {
         throw std::runtime_error("listen() failed");
     }
-    std::cout << "Listening on: " << socket_fd << std::endl;
 }
 
 ServerSocket::ServerSocket(SocketType type, SocketAddr4&& sock_addr) : ServerSocket(ProtocolFamily::IPV4, type, std::move(sock_addr)) {
@@ -56,9 +55,16 @@ ServerSocket::ServerSocket(SocketType type, SocketAddr46&& sock_addr) : ServerSo
     std::cout << "Creating dual-stack server socket" << std::endl;
 }
 
+ServerSocket& ServerSocket::operator=(ServerSocket&& other) noexcept {
+    if (this != &other) {
+        socket_fd = other.socket_fd;
+        other.socket_fd = INVALID_SOCKET_FD;
+    }
+    return *this;
+}
+
 ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr) const {
     socklen_t client_addr_size = sock_addr.size();
-    std::cout << socket_fd << std::endl;
     int fd = ::accept(socket_fd, sock_addr.data(), &client_addr_size);
     if (fd == -1) {
         perror("error");

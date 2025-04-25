@@ -9,7 +9,6 @@ int main() {
     //std::cout << num_threads << std::endl;
 
     HttpServer server = HttpServerBuilder()
-        .disable_ipv4()
         .build();
 
     server.run();
