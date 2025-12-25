@@ -26,13 +26,15 @@ protected:
     Socket(int fd);
 public:
     ~Socket();
+    void close();
     friend class ServerSocket;
 };
 
 class ClientSocket : public Socket {
 public:
+    ClientSocket(int fd);
     // TODO: take timeout so we don't wait forever for client message
-    std::string read();
+    int read(char* buffer, std::size count);
     bool write(const char* buffer, std::size_t count = 1024);
 };
 

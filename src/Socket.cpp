@@ -22,7 +22,12 @@ Socket::Socket(int fd) : socket_fd(fd) {
 Socket::~Socket() {
     if (socket_fd == INVALID_SOCKET_FD) {
         return;
-    } else if (close(socket_fd) == -1) {
+    }
+    this->close();
+}
+
+void Socket::close() {
+    if (::close(socket_fd) == -1) {
         throw std::runtime_error("close() failed");
     }
 }
@@ -63,35 +68,22 @@ ServerSocket& ServerSocket::operator=(ServerSocket&& other) noexcept {
     return *this;
 }
 
-ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr) const {
+ClientSocket::ClientSocket(int fd, const timeval* timeout) : Socket(fd) {
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeout));
+}
+
+ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeval* timeout) const {
     socklen_t client_addr_size = sock_addr.size();
     int fd = ::accept(socket_fd, sock_addr.data(), &client_addr_size);
     if (fd == -1) {
         perror("error");
         throw std::runtime_error("accept() failed");
     }
-    return ClientSocket(fd);
+    return ClientSocket(fd, timeout);
 }
 
-// Reads the entire client message
-std::string ClientSocket::read() {
-    constexpr size_t CHUNK = 4;
-    std::string request_message;
-    int result;
-
-    do {
-        request_message.resize(request_message.size() + CHUNK);
-        result = ::read(socket_fd, &request_message[request_message.size() - CHUNK], CHUNK); 
-    } while (result == CHUNK);
-
-    if (result == -1) {
-        perror("error");
-        throw std::runtime_error("read() failed");
-    } else { // result < CHUNK
-        request_message.resize(request_message.size() - CHUNK + result);
-    }
-
-    return request_message;
+int ClientSocket::read(char* buffer, std::size count) {
+    return ::read(socket_fd, buffer, count);
 }
 
 // Returns if the write was successful
