@@ -1,10 +1,12 @@
-#ifndef _SOCKET_HPP
-#define _SOCKET_HPP
+#ifndef _NET_SOCKET_HPP
+#define _NET_SOCKET_HPP
 
 #include <sys/socket.h>
 #include <string>
 
-#include "SocketAddr.hpp"
+#include "net/socket_addr.hpp"
+
+namespace net {
 
 enum class ProtocolFamily {
     IPV4 = AF_INET,
@@ -32,9 +34,9 @@ public:
 
 class ClientSocket : public Socket {
 public:
-    ClientSocket(int fd);
+    ClientSocket(int fd, const timeval* timeout);
     // TODO: take timeout so we don't wait forever for client message
-    int read(char* buffer, std::size count);
+    int read(char* buffer, std::size_t count);
     bool write(const char* buffer, std::size_t count = 1024);
 };
 
@@ -48,8 +50,10 @@ public:
 
     ServerSocket& operator=(ServerSocket&& other) noexcept;
 
-    ClientSocket accept_connection(SocketAddr& sock_addr) const;
+    ClientSocket accept_connection(SocketAddr& sock_addr, const timeval* timeout) const;
     friend class HttpServer;
 };
+
+} // end of `net` namespace
 
 #endif

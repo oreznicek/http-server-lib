@@ -4,7 +4,7 @@
 
 cmake_minimum_required (VERSION 3.20)
 
-project("polymorphic_sort")
+project("http_server")
 
 set(MY_EXE "main")
 
@@ -12,7 +12,9 @@ set(MY_EXE "main")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Collect all source files in the ./src directory
-file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+)
 
 add_executable(${MY_EXE} ${SOURCES})
 

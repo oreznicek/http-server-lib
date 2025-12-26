@@ -4,7 +4,9 @@
 #include <cerrno>
 #include <iostream>
 
-#include "Socket.hpp"
+#include "net/socket.hpp"
+
+using namespace net;
 
 constexpr int INVALID_SOCKET_FD = -1;
 
@@ -82,7 +84,7 @@ ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeva
     return ClientSocket(fd, timeout);
 }
 
-int ClientSocket::read(char* buffer, std::size count) {
+int ClientSocket::read(char* buffer, std::size_t count) {
     return ::read(socket_fd, buffer, count);
 }
 
