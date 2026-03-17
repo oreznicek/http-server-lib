@@ -1,26 +1,38 @@
 #
-# This is the cmake project file
+# Top-level CMakeLists.txt
 #
 
 cmake_minimum_required (VERSION 3.20)
-
 project("http_server")
 
-set(MY_EXE "main")
+# Generate compile_commands.json for clangd/NVIM
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Specify the path to the include folder
-include_directories(${CMAKE_SOURCE_DIR}/include)
+# ---------------------------------------------------------
+# Define the Core Static Library
+# ---------------------------------------------------------
 
 # Collect all source files in the ./src directory
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
 
-add_executable(${MY_EXE} ${SOURCES})
+# Create the static library
+add_library(http_server STATIC ${SOURCES})
 
-set_property(TARGET ${MY_EXE} PROPERTY CXX_STANDARD 23)
+# Attach include directories PUBLICLY.
+# Anything that links to this library gets this include folder automatically.
+target_include_directories(http_server PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
-# Set compiler to output all warnings
-target_compile_options(${MY_EXE} PRIVATE
-  -Wall -Wextra -Wpedantic
-)
+# Apply C++ standard and compiler warnings
+set_property(TARGET http_server PROPERTY CXX_STANDARD 23)
+target_compile_options(http_server PRIVATE -Wall -Wextra -Wpedantic)
+
+# ---------------------------------------------------------
+# Setup Testing
+# ---------------------------------------------------------
+
+enable_testing()
+
+# This MUST be at the end, so the tests can see 'http_server_core'
+add_subdirectory(tests)
