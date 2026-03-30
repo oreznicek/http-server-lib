@@ -7,27 +7,32 @@
 using namespace http;
 using namespace net;
 
-ServerBuilder& ServerBuilder::set_public_dir(std::string&& dir) { public_dir = dir; return *this; }
+ServerBuilder& ServerBuilder::set_public_dir(std::string&& dir) { public_dir_ = dir; return *this; }
 
-ServerBuilder& ServerBuilder::set_port(in_port_t port) { this->port = port; return *this; }
+ServerBuilder& ServerBuilder::set_port(in_port_t port) { this->port_ = port; return *this; }
 
-ServerBuilder& ServerBuilder::enable_ipv4() { ipv4 = true; return *this; }
-ServerBuilder& ServerBuilder::disable_ipv4() { ipv4 = false; return *this; }
+ServerBuilder& ServerBuilder::enable_ipv4() { ipv4_ = true; return *this; }
+ServerBuilder& ServerBuilder::disable_ipv4() { ipv4_ = false; return *this; }
 
-ServerBuilder& ServerBuilder::enable_ipv6() { ipv6 = true; return *this; }
-ServerBuilder& ServerBuilder::disable_ipv6() { ipv6 = false; return *this; }
+ServerBuilder& ServerBuilder::enable_ipv6() { ipv6_ = true; return *this; }
+ServerBuilder& ServerBuilder::disable_ipv6() { ipv6_ = false; return *this; }
 
-ServerBuilder& ServerBuilder::set_request_headers_size_limit(std::size_t limit) { headers_limit = limit; return *this; }
-ServerBuilder& ServerBuilder::set_request_body_size_limit(std::size_t limit) { body_limit = limit; return *this; }
+ServerBuilder& ServerBuilder::set_request_headers_size_limit(std::size_t limit) { headers_limit_ = limit; return *this; }
+ServerBuilder& ServerBuilder::set_request_body_size_limit(std::size_t limit) { body_limit_ = limit; return *this; }
+ServerBuilder& ServerBuilder::set_request_target_size_limit(std::size_t limit) { request_target_limit_ = limit; return *this; }
 
-ServerBuilder& ServerBuilder::set_request_timeout(const struct timeval& timeout) { this->timeout = timeout; return *this; }
+ServerBuilder& ServerBuilder::set_request_timeout(const struct timeval& timeout) { this->timeout_ = timeout; return *this; }
 
 Server ServerBuilder::build() {
     return Server(*this);
 }
 
 Server::Server(const ServerBuilder& b)
-    : ssock(SocketType::STREAM, SocketAddr46(b.port)), parser(b.headers_limit, b.body_limit), timeout(b.timeout) {
+    : ssock(SocketAddr46(b.port_)),
+    parser(b.headers_limit_, b.body_limit_, b.request_target_limit_),
+    timeout(b.timeout_),
+    is_running(false)
+{
     /*if (!b.ipv4 && !b.ipv6) {
         throw std::runtime_error("At least one from ipv4 and ipv6 flags has to be enabled.");
     } else if (b.ipv4 && !b.ipv6) {
@@ -42,26 +47,24 @@ Server::Server(const ServerBuilder& b)
 }
 
 void Server::run() {
-    while (true) {
+    is_running = true;
+    while (is_running) {
         SocketAddr6 client_addr;
         ClientSocket csock = ssock.accept_connection(client_addr, &timeout);
+        Connection conn(std::move(csock));
 
-        Request req = parser.parse_request(&csock);
+        auto req = parser.parse_request(conn);
 
-        if (!req.host) {
-            send_error_response(csock, StatusCode::BAD_REQUEST, "Missing Host Header");
+        if (req.has_value()) {
+            csock.write("server response\n");
+        } else if (req.error() == StatusCode::None) {
+            continue; // client closed
         } else {
-            csock.write("server response\n", 16);
+            send_error_response(csock, req.error());
         }
-
-        /*
-        std::cout << "----- CLIENT REQUEST -----" << std::endl;
-        std::cout << (int)req.method << " " << req.relative_path << std::endl;
-        std::cout << req.keep_alive << std::endl;
-        std::cout << req.close << std::endl;
-        std::cout << req.host << std::endl;
-        std::cout << '"' << req.body << '"' << std::endl;
-        */
-
     }
+}
+
+void Server::stop() {
+    is_running = false;
 }

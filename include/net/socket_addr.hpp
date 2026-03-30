@@ -11,16 +11,18 @@ class SocketAddr {
     virtual const sockaddr* data() const = 0;
     virtual socklen_t size() const = 0;
     friend class ServerSocket;
+    friend class ClientSocket;
 };
 
 class SocketAddr4 : public SocketAddr {
     sockaddr_in addr;
-    sockaddr* data() ;
+    sockaddr* data() override;
     const struct sockaddr* data() const override;
     socklen_t size() const override;
 public:
     SocketAddr4();
     SocketAddr4(in_port_t port_number);
+    SocketAddr4(std::string&& addr, in_port_t port_number);
 };
 
 class SocketAddr6 : public SocketAddr {

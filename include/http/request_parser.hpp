@@ -2,9 +2,12 @@
 #define _HTTP_REQUEST_PARSER_HPP
 
 #include "http/http.hpp"
+#include "http/connection.hpp"
 #include "net/socket.hpp"
 
+#include <string>
 #include <string_view>
+#include <expected>
 
 namespace http {
 
@@ -14,22 +17,18 @@ struct RequestHeader {
 };
 
 class RequestParser {
-    static constexpr int CHUNK = 1024;
-    static constexpr std::string HEADERS_END = "\r\n\r\n";
-    std::size_t headers_limit;
-    std::size_t body_limit;
+    std::size_t headers_limit_;
+    std::size_t body_limit_;
+    std::size_t request_target_limit_;
 
-    std::string read_headers(net::ClientSocket** socket);
-    RequestHeader parse_header(std::string_view line);
-    Request parse_headers(std::string_view headers);
-    std::string read_body(net::ClientSocket** socket);
+    std::expected<RequestHeader, StatusCode> parse_header(std::string_view line) noexcept;
+    std::expected<Request, StatusCode> parse_headers(std::string_view headers) noexcept;
 public:
-    RequestParser(std::size_t headers_limit, std::size_t body_limit);
-    Request parse_request(net::ClientSocket* socket);
+    RequestParser(std::size_t headers_limit, std::size_t body_limit, std::size_t request_target_limit);
+    std::expected<Request, StatusCode> parse_request(Connection& conn) noexcept;
 };
 
 void send_error_response(net::ClientSocket& csock, StatusCode code);
-void send_error_response(net::ClientSocket& csock, StatusCode code, std::string&& message);
 
 } // end of `http` namespace
 

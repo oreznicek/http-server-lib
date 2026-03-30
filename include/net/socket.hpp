@@ -1,30 +1,26 @@
 #ifndef _NET_SOCKET_HPP
 #define _NET_SOCKET_HPP
 
+#include <expected>
 #include <sys/socket.h>
 #include <string>
 
 #include "net/socket_addr.hpp"
+#include "http/http.hpp"
 
 namespace net {
 
-enum class ProtocolFamily {
-    IPV4 = AF_INET,
-    IPV6 = AF_INET6,
-    DUAL_STACK
-};
-
-enum class SocketType {
-    STREAM = SOCK_STREAM, // reliable
-    DATAGRAM = SOCK_DGRAM, // connection-less
-    SEQPACKET = SOCK_SEQPACKET
+enum class Protocol {
+    Ipv4,
+    Ipv6,
+    DualStack
 };
 
 /* Wrapper for unix socket */
 class Socket {
 protected:
     int socket_fd;
-    Socket(ProtocolFamily prot_fam, SocketType type);
+    Socket(Protocol prot);
     Socket(int fd);
 public:
     ~Socket();
@@ -33,20 +29,23 @@ public:
 };
 
 class ClientSocket : public Socket {
+    ClientSocket(Protocol prot, const SocketAddr& sock_addr, const timeval* timeout);
 public:
+    ClientSocket();
     ClientSocket(int fd, const timeval* timeout);
-    // TODO: take timeout so we don't wait forever for client message
+    ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout);
+
     int read(char* buffer, std::size_t count);
-    bool write(const char* buffer, std::size_t count = 1024);
+    bool write(const std::string& buffer);
 };
 
 class ServerSocket : public Socket {
     ServerSocket();
-    ServerSocket(ProtocolFamily prot_fam, SocketType type, SocketAddr&& sock_addr);
+    ServerSocket(Protocol prot, SocketAddr&& sock_addr);
 public:
-    ServerSocket(SocketType type, SocketAddr4&& sock_addr);
-    ServerSocket(SocketType type, SocketAddr6&& sock_addr);
-    ServerSocket(SocketType type, SocketAddr46&& sock_addr);
+    ServerSocket(SocketAddr4&& sock_addr);
+    ServerSocket(SocketAddr6&& sock_addr);
+    ServerSocket(SocketAddr46&& sock_addr);
 
     ServerSocket& operator=(ServerSocket&& other) noexcept;
 

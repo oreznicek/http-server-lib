@@ -6,16 +6,20 @@
 
 namespace http {
 
+inline constexpr in_port_t kServerDefaultPort = 8080;
+inline constexpr std::string_view kServerHttpVersion = "HTTP/1.1";
+
 class Server;
 
 class ServerBuilder {
-    std::string public_dir = "public";
-    in_port_t port = 8080;
-    bool ipv4 = true;
-    bool ipv6 = true;
-    std::size_t headers_limit = 8 * 1024;
-    std::size_t body_limit = 4 * 1024 * 1024;
-    timeval timeout{ .tv_sec = 5, .tv_usec = 0 };
+    std::string public_dir_ = "public";
+    in_port_t port_ = kServerDefaultPort;
+    bool ipv4_ = true;
+    bool ipv6_ = true;
+    std::size_t headers_limit_ = 8 * 1024;
+    std::size_t body_limit_ = 4 * 1024 * 1024;
+    std::size_t request_target_limit_ = 8 * 1024;
+    timeval timeout_{ .tv_sec = 5, .tv_usec = 0 };
 public:
     ServerBuilder& set_public_dir(std::string&&);
     ServerBuilder& set_port(in_port_t);
@@ -28,6 +32,7 @@ public:
 
     ServerBuilder& set_request_headers_size_limit(std::size_t);
     ServerBuilder& set_request_body_size_limit(std::size_t);
+    ServerBuilder& set_request_target_size_limit(std::size_t);
 
     ServerBuilder& set_request_timeout(const timeval& timeout);
 
@@ -40,11 +45,13 @@ class Server {
     net::ServerSocket ssock;
     RequestParser parser;
     timeval timeout;
+    bool is_running;
     // public dir
     Server(const ServerBuilder&);
 public:
     Server() = delete;
     void run();
+    void stop();
 
     friend class ServerBuilder;
 };

@@ -1,22 +1,38 @@
 #ifndef _HTTP_HPP
 #define _HTTP_HPP
 
+#include <cstdint>
 #include <string>
 
 namespace http {
 
 enum class RequestMethod {
-    GET = 0,
-    POST,
-    PUT,
-    DELETE,
-    NONE
+    Get = 0,
+    Post,
+    Put,
+    Delete,
+    None
 };
 
-enum class StatusCode {
-    BAD_REQUEST = 400,
-    REQUEST_TIMEOUT = 408,
-    REQUEST_HEADER_FIELDS_TOO_LARGE = 431
+enum class StatusCode : uint16_t {
+    // 2xx Success
+    Ok = 200,
+
+    // 3xx Redirection
+
+    // 4xx Client Errors
+    BadRequest = 400,
+    RequestTimeout = 408,
+    ContentTooLarge = 413,
+    UriTooLong = 414,
+    RequestHeaderFieldsTooLarge = 431,
+
+    // 5xx Server Errors
+    InternalServerError = 500,
+    NotImplemented = 501,
+    HttpVersionNotSupported = 505,
+
+    None
 };
 
 struct Request {
