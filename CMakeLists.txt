@@ -8,6 +8,10 @@ project("http_server")
 # Generate compile_commands.json for clangd/NVIM
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Set C++ standard globally
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # ---------------------------------------------------------
 # Define the Core Static Library
 # ---------------------------------------------------------
@@ -24,8 +28,7 @@ add_library(http_server STATIC ${SOURCES})
 # Anything that links to this library gets this include folder automatically.
 target_include_directories(http_server PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
-# Apply C++ standard and compiler warnings
-set_property(TARGET http_server PROPERTY CXX_STANDARD 23)
+# Apply compiler warnings
 target_compile_options(http_server PRIVATE -Wall -Wextra -Wpedantic)
 
 # ---------------------------------------------------------
