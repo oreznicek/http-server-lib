@@ -105,12 +105,17 @@ std::expected<Request, http::StatusCode> RequestParser::parse_request(Connection
     if (!req.has_value()) {
         return std::unexpected(req.error());
     }
-
-    res = conn.read_until("", body_limit_);
-    if (res.status != StatusCode::Ok) {
-        return std::unexpected(res.status);
+    if (!req->host) {
+        return std::unexpected(StatusCode::BadRequest);
     }
 
-    req->body = std::move(res.data);
+    if (req->content_length > 0) {
+        res = conn.read_until("", body_limit_);
+        if (res.status != StatusCode::Ok) {
+            return std::unexpected(res.status);
+        }
+        req->body = std::move(res.data);
+    }
+
     return req;
 }

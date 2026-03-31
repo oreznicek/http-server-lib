@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <arpa/inet.h>
 #include <cerrno>
+#include <cstring>
 #include <iostream>
 
 #include "net/socket.hpp"
@@ -11,18 +12,21 @@
 using namespace net;
 using namespace http;
 
-constexpr int INVALID_SOCKET_FD = -1;
+Socket::Socket()
+    : socket_fd_(kInvalidSocketFd)
+{}
 
-Socket::Socket(Protocol prot) {
-    constexpr int SELECT_DEFAULT_PROTOCOL = 0;
+Socket::Socket(Protocol prot)
+{
+    constexpr int kSelectDefaultProtocol = 0;
 
     socket_fd_ = socket(
         (prot == Protocol::Ipv4) ? AF_INET : AF_INET6,
         SOCK_STREAM,
         kSelectDefaultProtocol
     );
-    if (socket_fd == -1) {
-        throw std::runtime_error("Couldn't create socket");
+    if (socket_fd_ == -1) {
+        std::cout << "# socket() failed: " << strerror(errno) << std::endl;
     }
 
     if (prot == Protocol::Ipv6 || prot == Protocol::DualStack) {
@@ -47,26 +51,33 @@ Socket::~Socket()
     }
 }
 
-void Socket::close() {
-    if (::close(socket_fd) == -1) {
-        throw std::runtime_error("close() failed");
+void Socket::close()
+{
+    if (::close(socket_fd_) == -1) {
+        std::cout << "# close() failed: " << strerror(errno) << std::endl;
     }
+    socket_fd_ = kInvalidSocketFd;
 }
 
-ServerSocket::ServerSocket() : Socket(INVALID_SOCKET_FD) {
+
+bool Socket::is_valid()
+{
+    return socket_fd_ != kInvalidSocketFd;
 }
 
 ServerSocket::ServerSocket() : Socket()
 {}
 
 ServerSocket::ServerSocket(Protocol prot, SocketAddr&& sock_addr)
-    : Socket(prot) {
-    if (::bind(socket_fd, sock_addr.data(), sock_addr.size()) == -1) {
-        perror("error");
-        throw std::runtime_error("bind() failed");
+    : Socket(prot)
+{
+    pfd_.fd = socket_fd_;
+    pfd_.events = POLLIN;
+    if (::bind(socket_fd_, sock_addr.data(), sock_addr.size()) == -1) {
+        std::cout << "# bind() failed: " << strerror(errno) << std::endl;
     }
-    if (::listen(socket_fd, SOMAXCONN) == -1) {
-        throw std::runtime_error("listen() failed");
+    if (::listen(socket_fd_, SOMAXCONN) == -1) {
+        std::cout << "# listen() failed: " << strerror(errno) << std::endl;
     }
 }
 
@@ -94,10 +105,11 @@ ClientSocket::ClientSocket()
 {}
 
 ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const timeval* timeout)
-    : Socket(prot) {
-    setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
-    if (::connect(socket_fd, sock_addr.data(), sock_addr.size()) == -1) {
-        throw std::runtime_error("connect() failed");
+    : Socket(prot)
+{
+    setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
+    if (::connect(socket_fd_, sock_addr.data(), sock_addr.size()) == -1) {
+        std::cout << "# connect() failed: " << strerror(errno) << std::endl;
     }
 }
 
@@ -106,7 +118,24 @@ ClientSocket::ClientSocket(int fd, const timeval* timeout) : Socket(fd)
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
 }
 
-ClientSocket::ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout) : ClientSocket(Protocol::Ipv4, sock_addr, timeout) {
+ClientSocket::ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout) : ClientSocket(Protocol::Ipv4, sock_addr, timeout)
+{}
+
+ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)
+{
+    int poll_result = ::poll(&pfd_, 1, 100);
+
+    if (poll_result < 0) {
+        std::cout << "# poll() failed: " << strerror(errno) << std::endl;
+    } else if (poll_result == 0) {
+        return ClientSocket();
+    }
+
+    if (pfd_.revents & POLLIN) {
+        return accept_connection(sock_addr, timeout);
+    }
+    std::cout << "Some error even happened in poll()" << std::endl;
+    return ClientSocket();
 }
 
 ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeval* timeout) const
@@ -114,8 +143,7 @@ ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeva
     socklen_t client_addr_size = sock_addr.size();
     int fd = ::accept(socket_fd_, sock_addr.data(), &client_addr_size);
     if (fd == -1) {
-        perror("error");
-        throw std::runtime_error("accept() failed");
+        std::cout << "# accept() failed: " << strerror(errno) << std::endl;
     }
     return ClientSocket(fd, timeout);
 }

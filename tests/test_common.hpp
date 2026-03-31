@@ -3,6 +3,18 @@
 
 #include <iostream>
 #include <vector>
+#include <sstream>
+
+inline void print_http_request(const std::string& str)
+{
+    std::istringstream stream(str);
+    std::string line;
+    std::cout << "========== [ HTTP REQUEST START ] ==========" << std::endl;
+    while (std::getline(stream, line)) {
+        std::cout << ">> " << line << std::endl;
+    }
+    std::cout << "========== [  HTTP REQUEST END  ] ==========" << std::endl;
+}
 
 using test_func_t = bool(*)();
 

@@ -2,6 +2,7 @@
 #define _NET_SOCKET_HPP
 
 #include <expected>
+#include <poll.h>
 #include <sys/socket.h>
 #include <string>
 
@@ -19,12 +20,16 @@ enum class Protocol {
 /* Wrapper for unix socket */
 class Socket {
 protected:
-    int socket_fd;
+    static constexpr int kInvalidSocketFd = -1;
+    int socket_fd_;
+    Socket();
     Socket(Protocol prot);
     Socket(int fd);
 public:
+    Socket(Socket&& other) noexcept;
     ~Socket();
     void close();
+    bool is_valid();
     friend class ServerSocket;
 };
 
@@ -40,8 +45,10 @@ public:
 };
 
 class ServerSocket : public Socket {
+    pollfd pfd_;
     ServerSocket();
     ServerSocket(Protocol prot, SocketAddr&& sock_addr);
+    ClientSocket accept_connection(SocketAddr& sock_addr, const timeval* timeout) const;
 public:
     ServerSocket(SocketAddr4&& sock_addr);
     ServerSocket(SocketAddr6&& sock_addr);
@@ -49,7 +56,7 @@ public:
 
     ServerSocket& operator=(ServerSocket&& other) noexcept;
 
-    ClientSocket accept_connection(SocketAddr& sock_addr, const timeval* timeout) const;
+    ClientSocket poll(SocketAddr& sock_addr, const timeval* timeout);
     friend class HttpServer;
 };
 

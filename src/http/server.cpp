@@ -28,10 +28,10 @@ Server ServerBuilder::build() {
 }
 
 Server::Server(const ServerBuilder& b)
-    : ssock(SocketAddr46(b.port_)),
-    parser(b.headers_limit_, b.body_limit_, b.request_target_limit_),
-    timeout(b.timeout_),
-    is_running(false)
+    : ssock_(SocketAddr46(b.port_)),
+    parser_(b.headers_limit_, b.body_limit_, b.request_target_limit_),
+    timeout_(b.timeout_),
+    is_running_(false)
 {
     /*if (!b.ipv4 && !b.ipv6) {
         throw std::runtime_error("At least one from ipv4 and ipv6 flags has to be enabled.");
@@ -46,25 +46,42 @@ Server::Server(const ServerBuilder& b)
     // public dir
 }
 
-void Server::run() {
-    is_running = true;
-    while (is_running) {
+void Server::send_error_response(Connection& conn, StatusCode code)
+{
+    std::string full_message = std::to_string((int)code) + " " + to_string(code);
+    std::string resp_body = "<html><body><h1>" + full_message + "</h1></body></html>";
+    std::string response =
+        "HTTP/1.1 " + full_message + "\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: " + std::to_string(resp_body.size()) + "\r\n"
+        "\r\n" + resp_body;
+    conn.send(response);
+}
+
+void Server::run()
+{
+    is_running_ = true;
+    while (is_running_) {
         SocketAddr6 client_addr;
-        ClientSocket csock = ssock.accept_connection(client_addr, &timeout);
+        ClientSocket csock = ssock_.poll(client_addr, &timeout_);
+        if (!csock.is_valid()) {
+            continue;
+        }
         Connection conn(std::move(csock));
 
-        auto req = parser.parse_request(conn);
+        auto req = parser_.parse_request(conn);
 
         if (req.has_value()) {
-            csock.write("server response\n");
+            csock.send("server response\n");
         } else if (req.error() == StatusCode::None) {
             continue; // client closed
         } else {
-            send_error_response(csock, req.error());
+            send_error_response(conn, req.error());
         }
     }
 }
 
-void Server::stop() {
-    is_running = false;
+void Server::stop()
+{
+    is_running_ = false;
 }
