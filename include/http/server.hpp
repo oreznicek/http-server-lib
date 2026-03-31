@@ -42,12 +42,13 @@ public:
 };
 
 class Server {
-    net::ServerSocket ssock;
-    RequestParser parser;
-    timeval timeout;
-    bool is_running;
+    net::ServerSocket ssock_;
+    RequestParser parser_;
+    timeval timeout_;
+    bool is_running_;
     // public dir
     Server(const ServerBuilder&);
+    void send_error_response(Connection& conn, StatusCode code);
 public:
     Server() = delete;
     void run();

@@ -10,7 +10,8 @@
 using namespace http;
 using namespace net;
 
-std::expected<RequestHeader, StatusCode> RequestParser::parse_header(std::string_view line) noexcept {
+std::expected<RequestHeader, StatusCode> RequestParser::parse_header(std::string_view line) noexcept
+{
     std::size_t i = line.find(':');
     if (i == std::string_view::npos) {
         return std::unexpected(StatusCode::BadRequest);
@@ -29,7 +30,8 @@ std::expected<RequestHeader, StatusCode> RequestParser::parse_header(std::string
     return RequestHeader{std::string(key), std::string(value)};
 }
 
-std::expected<Request, StatusCode> RequestParser::parse_headers(std::string_view headers) noexcept {
+std::expected<Request, StatusCode> RequestParser::parse_headers(std::string_view headers) noexcept
+{
     Request req;
 
     std::size_t i = headers.find(' ');
@@ -90,7 +92,8 @@ RequestParser::RequestParser(std::size_t headers_limit, std::size_t body_limit, 
     request_target_limit_(request_target_limit)
 {}
 
-std::expected<Request, http::StatusCode> RequestParser::parse_request(Connection& conn) noexcept {
+std::expected<Request, http::StatusCode> RequestParser::parse_request(Connection& conn) noexcept
+{
     Connection::ReadResult res = conn.read_until("\r\n\r\n", headers_limit_);
     if (res.status == StatusCode::ContentTooLarge) {
         return std::unexpected(StatusCode::RequestHeaderFieldsTooLarge);
@@ -110,15 +113,4 @@ std::expected<Request, http::StatusCode> RequestParser::parse_request(Connection
 
     req->body = std::move(res.data);
     return req;
-}
-
-void http::send_error_response(ClientSocket& csock, StatusCode code) {
-    std::string full_message = std::to_string((int)code) + " " + to_string(code);
-    std::string resp_body = "<html><body><h1>" + full_message + "</h1></body></html>";
-    std::string response =
-        "HTTP/1.1 " + full_message + "\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: " + std::to_string(resp_body.size()) + "\r\n"
-        "\r\n" + resp_body;
-    csock.write(response);
 }

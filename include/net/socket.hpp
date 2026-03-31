@@ -35,8 +35,8 @@ public:
     ClientSocket(int fd, const timeval* timeout);
     ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout);
 
-    int read(char* buffer, std::size_t count);
-    bool write(const std::string& buffer);
+    int recv(char* buffer, std::size_t count);
+    bool send(const std::string& buffer);
 };
 
 class ServerSocket : public Socket {

@@ -19,6 +19,7 @@ public:
         std::string data;
     };
     ReadResult read_until(std::string_view delimiter, std::size_t max_bytes);
+    bool send(const std::string& buffer);
 };
 
 } // end of `http` namespace

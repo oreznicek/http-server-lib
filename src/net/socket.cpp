@@ -16,10 +16,10 @@ constexpr int INVALID_SOCKET_FD = -1;
 Socket::Socket(Protocol prot) {
     constexpr int SELECT_DEFAULT_PROTOCOL = 0;
 
-    socket_fd = socket(
+    socket_fd_ = socket(
         (prot == Protocol::Ipv4) ? AF_INET : AF_INET6,
         SOCK_STREAM,
-        SELECT_DEFAULT_PROTOCOL
+        kSelectDefaultProtocol
     );
     if (socket_fd == -1) {
         throw std::runtime_error("Couldn't create socket");
@@ -27,18 +27,24 @@ Socket::Socket(Protocol prot) {
 
     if (prot == Protocol::Ipv6 || prot == Protocol::DualStack) {
         int on = (prot == Protocol::Ipv6);
-        setsockopt(socket_fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+        setsockopt(socket_fd_, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
     }
 }
 
-Socket::Socket(int fd) : socket_fd(fd) {
+Socket::Socket(int fd) : socket_fd_(fd)
+{}
+
+Socket::Socket(Socket&& other) noexcept
+    : socket_fd_(other.socket_fd_)
+{
+    other.socket_fd_ = -1;
 }
 
-Socket::~Socket() {
-    if (socket_fd == INVALID_SOCKET_FD) {
-        return;
+Socket::~Socket()
+{
+    if (socket_fd_ != kInvalidSocketFd) {
+        close();
     }
-    this->close();
 }
 
 void Socket::close() {
@@ -49,6 +55,9 @@ void Socket::close() {
 
 ServerSocket::ServerSocket() : Socket(INVALID_SOCKET_FD) {
 }
+
+ServerSocket::ServerSocket() : Socket()
+{}
 
 ServerSocket::ServerSocket(Protocol prot, SocketAddr&& sock_addr)
     : Socket(prot) {
@@ -62,23 +71,27 @@ ServerSocket::ServerSocket(Protocol prot, SocketAddr&& sock_addr)
 }
 
 ServerSocket::ServerSocket(SocketAddr4&& sock_addr)
-    : ServerSocket(Protocol::Ipv4, std::move(sock_addr)) {
-}
-
+    : ServerSocket(Protocol::Ipv4, std::move(sock_addr))
+{}
 ServerSocket::ServerSocket(SocketAddr6&& sock_addr)
-    : ServerSocket(Protocol::Ipv6, std::move(sock_addr)) {
-}
+    : ServerSocket(Protocol::Ipv6, std::move(sock_addr))
+{}
 ServerSocket::ServerSocket(SocketAddr46&& sock_addr)
-    : ServerSocket(Protocol::DualStack, std::move(sock_addr)) {
-}
+    : ServerSocket(Protocol::DualStack, std::move(sock_addr))
+{}
 
-ServerSocket& ServerSocket::operator=(ServerSocket&& other) noexcept {
+ServerSocket& ServerSocket::operator=(ServerSocket&& other) noexcept
+{
     if (this != &other) {
-        socket_fd = other.socket_fd;
-        other.socket_fd = INVALID_SOCKET_FD;
+        socket_fd_ = other.socket_fd_;
+        other.socket_fd_ = kInvalidSocketFd;
     }
     return *this;
 }
+
+ClientSocket::ClientSocket()
+    : Socket()
+{}
 
 ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const timeval* timeout)
     : Socket(prot) {
@@ -88,16 +101,18 @@ ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const tim
     }
 }
 
-ClientSocket::ClientSocket(int fd, const timeval* timeout) : Socket(fd) {
+ClientSocket::ClientSocket(int fd, const timeval* timeout) : Socket(fd)
+{
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
 }
 
 ClientSocket::ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout) : ClientSocket(Protocol::Ipv4, sock_addr, timeout) {
 }
 
-ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeval* timeout) const {
+ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeval* timeout) const
+{
     socklen_t client_addr_size = sock_addr.size();
-    int fd = ::accept(socket_fd, sock_addr.data(), &client_addr_size);
+    int fd = ::accept(socket_fd_, sock_addr.data(), &client_addr_size);
     if (fd == -1) {
         perror("error");
         throw std::runtime_error("accept() failed");
@@ -105,12 +120,17 @@ ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeva
     return ClientSocket(fd, timeout);
 }
 
-int ClientSocket::read(char* buffer, std::size_t count) {
-    return ::recv(socket_fd, buffer, count, 0);
+int ClientSocket::recv(char* buffer, std::size_t count)
+{
+    return ::recv(socket_fd_, buffer, count, 0);
 }
 
 // Returns if the write was successful
-bool ClientSocket::write(const std::string& buffer) {
-    int result = ::write(socket_fd, buffer.c_str(), buffer.size());
+bool ClientSocket::send(const std::string& buffer)
+{
+    int result = ::send(socket_fd_, buffer.c_str(), buffer.size(), 0);
+    if (result == -1) {
+        std::cout << "# send() failed: " << strerror(errno) << std::endl;
+    }
     return result != -1;
 }

@@ -11,7 +11,7 @@ enum class RequestMethod {
     Post,
     Put,
     Delete,
-    None
+    None = 999
 };
 
 enum class StatusCode : uint16_t {
@@ -32,7 +32,7 @@ enum class StatusCode : uint16_t {
     NotImplemented = 501,
     HttpVersionNotSupported = 505,
 
-    None
+    None = 999
 };
 
 struct Request {

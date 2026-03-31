@@ -28,8 +28,6 @@ public:
     std::expected<Request, StatusCode> parse_request(Connection& conn) noexcept;
 };
 
-void send_error_response(net::ClientSocket& csock, StatusCode code);
-
 } // end of `http` namespace
 
 #endif

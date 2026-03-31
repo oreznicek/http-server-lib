@@ -2,7 +2,8 @@
 
 using namespace http;
 
-RequestMethod http::to_request_method(std::string_view str) {
+RequestMethod http::to_request_method(std::string_view str)
+{
     if (str == "GET") return RequestMethod::Get;
     else if (str == "POST") return RequestMethod::Post;
     else if (str == "PUT") return RequestMethod::Put;
@@ -10,7 +11,8 @@ RequestMethod http::to_request_method(std::string_view str) {
     return RequestMethod::None;
 }
 
-std::string http::to_string(StatusCode code) {
+std::string http::to_string(StatusCode code)
+{
     switch (code) {
         case StatusCode::Ok:
             return "OK";
@@ -33,4 +35,5 @@ std::string http::to_string(StatusCode code) {
         case StatusCode::None:
             return "";
     }
+    return "";
 }

@@ -1,9 +1,12 @@
 #include "http/connection.hpp"
 
+#include <cstring>
+#include <format>
+
 using namespace http;
 
 Connection::Connection(net::ClientSocket&& csock)
-    : csock_(csock)
+    : csock_(std::move(csock))
 {}
 
 Connection::ReadResult Connection::read_until(std::string_view delimiter, std::size_t max_bytes)
@@ -19,7 +22,7 @@ Connection::ReadResult Connection::read_until(std::string_view delimiter, std::s
 
     do {
         buffer.resize(buffer.size() + CHUNK);
-        bytes = csock_.read(&buffer[buffer.size() - CHUNK], CHUNK);
+        bytes = csock_.recv(&buffer[buffer.size() - CHUNK], CHUNK);
 
         if (bytes < 0) {
             // TODO: Add logging of the errors
@@ -71,4 +74,10 @@ Connection::ReadResult Connection::read_until(std::string_view delimiter, std::s
 
     result.status = StatusCode::ContentTooLarge;
     return result;
+}
+
+
+bool Connection::send(const std::string& buffer)
+{
+    return csock_.send(buffer);
 }
