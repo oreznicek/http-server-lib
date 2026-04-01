@@ -18,6 +18,10 @@ std::expected<RequestHeader, StatusCode> RequestParser::parse_header(std::string
     }
 
     std::string_view key = line.substr(0, i);
+    if (key.empty()) {
+        return std::unexpected(StatusCode::BadRequest);
+    }
+
     std::string_view value = line.substr(i + 1);
 
     while (!value.empty() && std::isspace(value.front())) {
@@ -54,9 +58,7 @@ std::expected<Request, StatusCode> RequestParser::parse_headers(std::string_view
     if (headers.substr(0, i) != kServerHttpVersion) {
         return std::unexpected(StatusCode::HttpVersionNotSupported);
     }
-    headers = headers.substr(i + 1);
-
-    headers = headers.substr(headers.find("\r\n") + 2);
+    headers = headers.substr(i + 2);
 
     std::string_view line;
 
@@ -100,6 +102,9 @@ std::expected<Request, http::StatusCode> RequestParser::parse_request(Connection
     } else if (res.status != StatusCode::Ok) {
         return std::unexpected(res.status);
     }
+
+    // Add for easier headers parsing
+    res.data += "\r\n";
 
     auto req = parse_headers(res.data);
     if (!req.has_value()) {
