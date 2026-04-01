@@ -22,7 +22,6 @@ class SocketAddr4 : public SocketAddr {
 public:
     SocketAddr4();
     SocketAddr4(in_port_t port_number);
-    SocketAddr4(std::string&& addr, in_port_t port_number);
 };
 
 class SocketAddr6 : public SocketAddr {
