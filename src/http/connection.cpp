@@ -1,7 +1,6 @@
 #include "http/connection.hpp"
 
 #include <cstring>
-#include <format>
 
 using namespace http;
 
@@ -9,15 +8,18 @@ Connection::Connection(net::ClientSocket&& csock)
     : csock_(std::move(csock))
 {}
 
+Connection::ReadResult::ReadResult(StatusCode status)
+    : status(status)
+{}
+Connection::ReadResult::ReadResult(StatusCode status, std::string&& data)
+    : status(status), data(std::move(data))
+{}
+
 Connection::ReadResult Connection::read_until(std::string_view delimiter, std::size_t max_bytes)
 {
     static constexpr int CHUNK = 1024;
 
-    ReadResult result = {
-        .status = StatusCode::Ok,
-        .data = leftover_
-    };
-    std::string& buffer = result.data;
+    std::string buffer;
     int bytes;
 
     do {
@@ -34,27 +36,21 @@ Connection::ReadResult Connection::read_until(std::string_view delimiter, std::s
             #if EAGAIN != EWOULDBLOCK
                 case EWOULDBLOCK:
             #endif
-                    result.status = StatusCode::RequestTimeout;
-                    break;
+                    return Connection::ReadResult(StatusCode::RequestTimeout);
                 case ECONNRESET:
                 case ETIMEDOUT:
-                    result.status = StatusCode::None;
-                    break;
+                    return Connection::ReadResult(StatusCode::None);
                 case EBADF:
                 case ENOTSOCK:
                 case ENOTCONN:
                 case EINVAL:
                 case EOPNOTSUPP:
-                    result.status = StatusCode::InternalServerError;
-                    break;
+                    return Connection::ReadResult(StatusCode::InternalServerError);
                 default: // EIO, ENOBUFS, ENOMEM
-                    result.status = StatusCode::None;
-                    break;
+                    return Connection::ReadResult(StatusCode::None);
             }
-            break;
         }  else if (bytes == 0) { // TCP FIN
-            result.status = StatusCode::None;
-            break;
+            return Connection::ReadResult(StatusCode::None);
         } else if (bytes < CHUNK) {
             buffer.resize(buffer.size() - CHUNK + bytes);
         }
@@ -68,12 +64,11 @@ Connection::ReadResult Connection::read_until(std::string_view delimiter, std::s
         if (i != std::string::npos) {
             leftover_ = buffer.substr(i + delimiter.size());
             buffer.resize(i);
-            return result;
+            return Connection::ReadResult(StatusCode::Ok, std::move(buffer));
         }
     } while (buffer.size() <= max_bytes);
 
-    result.status = StatusCode::ContentTooLarge;
-    return result;
+    return Connection::ReadResult(StatusCode::ContentTooLarge);
 }
 
 

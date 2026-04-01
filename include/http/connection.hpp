@@ -17,6 +17,8 @@ public:
     struct ReadResult {
         StatusCode status;
         std::string data;
+        ReadResult(StatusCode status);
+        ReadResult(StatusCode status, std::string&& data);
     };
     ReadResult read_until(std::string_view delimiter, std::size_t max_bytes);
     bool send(const std::string& buffer);
