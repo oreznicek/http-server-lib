@@ -3,25 +3,13 @@
 
 #include <iostream>
 #include <vector>
-#include <sstream>
-
-inline void print_http_request(const std::string& str)
-{
-    std::istringstream stream(str);
-    std::string line;
-    std::cout << "========== [ HTTP REQUEST START ] ==========" << std::endl;
-    while (std::getline(stream, line)) {
-        std::cout << ">> " << line << std::endl;
-    }
-    std::cout << "========== [  HTTP REQUEST END  ] ==========" << std::endl;
-}
 
 using test_func_t = bool(*)();
 
 // This holds the list of all registered tests
 class TestRegistry {
 private:
-    std::vector<test_func_t> tests;
+    std::vector<test_func_t> tests_;
 public:
     // Meyers' Singleton
     static TestRegistry& instance() {
@@ -31,25 +19,25 @@ public:
 
     // Add a test to the list
     void add(test_func_t func) {
-        tests.push_back(func);
+        tests_.push_back(func);
     }
 
     // Run all tests and return the CTest exit code
     int run_all() {
         int failed = 0;
-        for (const test_func_t& test : tests) {
+        for (const test_func_t& test : tests_) {
             // Call the function pointer
             if (!test()) {
                 failed++;
             }
+            std::cout << "================================================================" << std::endl;
         }
 
-        std::cout << "\n==============================\n";
         if (failed == 0) {
-            std::cout << "SUCCESS: All " << tests.size() << " tests passed!\n";
+            std::cout << "SUCCESS: All " << tests_.size() << " tests passed!" << std::endl;
             return 0;
         } else {
-            std::cerr << "FAILURE: " << failed << " out of " << tests.size() << " tests failed.\n";
+            std::cerr << "FAILURE: " << failed << " out of " << tests_.size() << " tests failed." << std::endl;;
             return 1;
         }
     }
