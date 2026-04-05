@@ -24,24 +24,24 @@ ServerBuilder& ServerBuilder::set_request_target_size_limit(std::size_t limit) {
 ServerBuilder& ServerBuilder::set_request_timeout(const struct timeval& timeout) { this->timeout_ = timeout; return *this; }
 
 Server ServerBuilder::build() {
+    if (!ipv4_ && !ipv6_) {
+        throw std::runtime_error("At least one from ipv4 and ipv6 flags has to be enabled.");
+    }
     return Server(*this);
 }
 
 Server::Server(const ServerBuilder& b)
-    : ssock_(SocketAddr46(b.port_)),
-    parser_(b.headers_limit_, b.body_limit_, b.request_target_limit_),
+    : parser_(b.headers_limit_, b.body_limit_, b.request_target_limit_),
     timeout_(b.timeout_),
     is_running_(false)
 {
-    /*if (!b.ipv4 && !b.ipv6) {
-        throw std::runtime_error("At least one from ipv4 and ipv6 flags has to be enabled.");
-    } else if (b.ipv4 && !b.ipv6) {
-        ssock = ServerSocket(SocketType::STREAM, SocketAddr4(b.port));
-    } else if (!b.ipv4 && b.ipv6) {
-        ssock = ServerSocket(SocketType::STREAM, SocketAddr6(b.port));
+    if (b.ipv4_ && !b.ipv6_) {
+        ssock_ = ServerSocket(SocketAddr4(b.port_));
+    } else if (!b.ipv4_ && b.ipv6_) {
+        ssock_ = ServerSocket(SocketAddr6(b.port_));
     } else {
-        ssock = ServerSocket(SocketType::STREAM, SocketAddr46(b.port));
-    }*/
+        ssock_ = ServerSocket(SocketAddr46(b.port_));
+    }
 
     // public dir
 }
@@ -72,7 +72,7 @@ void Server::run()
         auto req = parser_.parse_request(conn);
 
         if (req.has_value()) {
-            csock.send("server response\n");
+            send_error_response(conn, http::StatusCode::Ok);
         } else if (req.error() == StatusCode::None) {
             continue; // client closed
         } else {

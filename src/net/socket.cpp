@@ -101,6 +101,8 @@ ServerSocket& ServerSocket::operator=(ServerSocket&& other) noexcept
 {
     if (this != &other) {
         socket_fd_ = other.socket_fd_;
+        pfd_ = other.pfd_;
+        srv_port_ = other.srv_port_;
         other.socket_fd_ = kInvalidSocketFd;
     }
     return *this;
