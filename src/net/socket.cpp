@@ -76,6 +76,12 @@ ServerSocket::ServerSocket(Protocol prot, SocketAddr&& sock_addr)
     if (::bind(socket_fd_, sock_addr.data(), sock_addr.size()) == -1) {
         std::cout << "# bind() failed: " << strerror(errno) << std::endl;
     }
+    sockaddr_in srv_addr;
+    socklen_t srv_addr_len = sizeof(sockaddr);
+    if (::getsockname(socket_fd_, (sockaddr*)&srv_addr, &srv_addr_len)) {
+        std::cout << "# getsockname() failed: " << strerror(errno) << std::endl;
+    }
+    srv_port_ = ntohs(srv_addr.sin_port);
     if (::listen(socket_fd_, SOMAXCONN) == -1) {
         std::cout << "# listen() failed: " << strerror(errno) << std::endl;
     }
@@ -123,7 +129,7 @@ ClientSocket::ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout)
 
 ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)
 {
-    int poll_result = ::poll(&pfd_, 1, 100);
+    int poll_result = ::poll(&pfd_, 1, kPollTimeout);
 
     if (poll_result < 0) {
         std::cout << "# poll() failed: " << strerror(errno) << std::endl;

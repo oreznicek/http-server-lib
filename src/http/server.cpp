@@ -85,3 +85,8 @@ void Server::stop()
 {
     is_running_ = false;
 }
+
+SocketAddr4 Server::get_addr()
+{
+    return SocketAddr4(ssock_.srv_port_);
+}

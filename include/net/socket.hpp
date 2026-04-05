@@ -1,13 +1,15 @@
 #ifndef _NET_SOCKET_HPP
 #define _NET_SOCKET_HPP
 
-#include <expected>
 #include <poll.h>
 #include <sys/socket.h>
 #include <string>
 
 #include "net/socket_addr.hpp"
-#include "http/http.hpp"
+
+namespace http {
+class Server; // forward declaration
+}
 
 namespace net {
 
@@ -25,10 +27,10 @@ protected:
     Socket();
     Socket(Protocol prot);
     Socket(int fd);
+    void close();
 public:
     Socket(Socket&& other) noexcept;
     ~Socket();
-    void close();
     bool is_valid();
     friend class ServerSocket;
 };
@@ -45,7 +47,10 @@ public:
 };
 
 class ServerSocket : public Socket {
+    static constexpr int kPollTimeout = 100; // ms
     pollfd pfd_;
+    in_port_t srv_port_;
+
     ServerSocket();
     ServerSocket(Protocol prot, SocketAddr&& sock_addr);
     ClientSocket accept_connection(SocketAddr& sock_addr, const timeval* timeout) const;
@@ -57,7 +62,8 @@ public:
     ServerSocket& operator=(ServerSocket&& other) noexcept;
 
     ClientSocket poll(SocketAddr& sock_addr, const timeval* timeout);
-    friend class HttpServer;
+
+    friend class http::Server;
 };
 
 } // end of `net` namespace

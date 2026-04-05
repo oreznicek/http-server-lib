@@ -6,6 +6,7 @@
 
 namespace http {
 
+inline constexpr in_port_t kSelectRandomPort = 0;
 inline constexpr in_port_t kServerDefaultPort = 8080;
 inline constexpr std::string_view kServerHttpVersion = "HTTP/1.1";
 
@@ -53,6 +54,7 @@ public:
     Server() = delete;
     void run();
     void stop();
+    net::SocketAddr4 get_addr();
 
     friend class ServerBuilder;
 };
