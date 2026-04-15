@@ -41,6 +41,7 @@ public:
     ClientSocket();
     ClientSocket(int fd, const timeval* timeout);
     ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout);
+    ClientSocket(const SocketAddr6& sock_addr, const timeval* timeout);
 
     int recv(char* buffer, std::size_t count);
     bool send(const std::string& buffer);

@@ -41,7 +41,7 @@ Socket::Socket(int fd) : socket_fd_(fd)
 Socket::Socket(Socket&& other) noexcept
     : socket_fd_(other.socket_fd_)
 {
-    other.socket_fd_ = -1;
+    other.socket_fd_ = kInvalidSocketFd;
 }
 
 Socket::~Socket()
@@ -117,7 +117,7 @@ ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const tim
 {
     setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
     if (::connect(socket_fd_, sock_addr.data(), sock_addr.size()) == -1) {
-        std::cout << "# connect() failed: " << strerror(errno) << std::endl;
+        throw std::runtime_error(strerror(errno));
     }
 }
 
@@ -126,7 +126,12 @@ ClientSocket::ClientSocket(int fd, const timeval* timeout) : Socket(fd)
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
 }
 
-ClientSocket::ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout) : ClientSocket(Protocol::Ipv4, sock_addr, timeout)
+ClientSocket::ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout)
+    : ClientSocket(Protocol::Ipv4, sock_addr, timeout)
+{}
+
+ClientSocket::ClientSocket(const SocketAddr6& sock_addr, const timeval* timeout)
+    : ClientSocket(Protocol::Ipv6, sock_addr, timeout)
 {}
 
 ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)

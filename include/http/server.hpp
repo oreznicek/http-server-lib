@@ -55,6 +55,7 @@ public:
     void run();
     void stop();
     net::SocketAddr4 get_addr();
+    net::SocketAddr6 get_addr6();
 
     friend class ServerBuilder;
 };

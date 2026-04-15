@@ -93,3 +93,8 @@ SocketAddr4 Server::get_addr()
 {
     return SocketAddr4(ssock_.srv_port_);
 }
+
+SocketAddr6 Server::get_addr6()
+{
+    return SocketAddr6(ssock_.srv_port_);
+}
