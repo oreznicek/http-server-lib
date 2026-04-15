@@ -35,6 +35,13 @@ enum class StatusCode : uint16_t {
     None = 999
 };
 
+struct ServerErr {
+    StatusCode code;
+    std::string message;
+    ServerErr(StatusCode code);
+    ServerErr(StatusCode code, std::string&& msg);
+};
+
 struct Request {
     RequestMethod method;
     std::string relative_path;

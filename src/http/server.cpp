@@ -46,13 +46,16 @@ Server::Server(const ServerBuilder& b)
     // public dir
 }
 
-void Server::send_error_response(Connection& conn, StatusCode code)
+void Server::send_error_response(Connection& conn, ServerErr err)
 {
-    std::string full_message = std::to_string((int)code) + " " + to_string(code);
-    std::string resp_body = "<html><body><h1>" + full_message + "</h1></body></html>";
+    std::string resp_body =
+        "{\r\n"
+        "\t\"code\": \"" + to_string(err.code) + "\"\r\n"
+        "\t\"message\": \"" + err.message + "\"\r\n"
+        "}";
     std::string response =
-        "HTTP/1.1 " + full_message + "\r\n"
-        "Content-Type: text/html\r\n"
+        "HTTP/1.1 " + std::to_string((int)err.code) + " " + to_string(err.code) + "\r\n"
+        "Content-Type: application/json\r\n"
         "Content-Length: " + std::to_string(resp_body.size()) + "\r\n"
         "\r\n" + resp_body;
     conn.send(response);
@@ -73,7 +76,7 @@ void Server::run()
 
         if (req.has_value()) {
             send_error_response(conn, http::StatusCode::Ok);
-        } else if (req.error() == StatusCode::None) {
+        } else if (req.error().code == StatusCode::None) {
             continue; // client closed
         } else {
             send_error_response(conn, req.error());

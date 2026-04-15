@@ -10,16 +10,16 @@
 using namespace http;
 using namespace net;
 
-std::expected<RequestHeader, StatusCode> RequestParser::parse_header(std::string_view line) noexcept
+std::expected<RequestHeader, ServerErr> RequestParser::parse_header(std::string_view line) noexcept
 {
     std::size_t i = line.find(':');
     if (i == std::string_view::npos) {
-        return std::unexpected(StatusCode::BadRequest);
+        return std::unexpected(ServerErr(StatusCode::BadRequest, "Missing Header Colon"));
     }
 
     std::string_view key = line.substr(0, i);
     if (key.empty()) {
-        return std::unexpected(StatusCode::BadRequest);
+        return std::unexpected(ServerErr(StatusCode::BadRequest, "Missing Header Key"));
     }
 
     std::string_view value = line.substr(i + 1);
@@ -34,14 +34,15 @@ std::expected<RequestHeader, StatusCode> RequestParser::parse_header(std::string
     return RequestHeader{std::string(key), std::string(value)};
 }
 
-std::expected<Request, StatusCode> RequestParser::parse_headers(std::string_view headers) noexcept
+std::expected<Request, ServerErr> RequestParser::parse_headers(std::string_view headers) noexcept
 {
     Request req;
 
     std::size_t i = headers.find(' ');
     req.method = to_request_method(headers.substr(0, i));
     if (req.method == RequestMethod::None) {
-        return std::unexpected(StatusCode::NotImplemented);
+        return std::unexpected(
+            ServerErr(StatusCode::NotImplemented, "Request Method Not Implemented"));
     }
     headers = headers.substr(i + 1);
 
@@ -50,13 +51,17 @@ std::expected<Request, StatusCode> RequestParser::parse_headers(std::string_view
     // also accept query string in relative path
     req.relative_path = headers.substr(0, i);
     if (req.relative_path.size() > request_target_limit_) {
-        return std::unexpected(StatusCode::UriTooLong);
+        return std::unexpected(ServerErr(
+            StatusCode::UriTooLong,
+            "Maximum Uri size is: " + std::to_string(request_target_limit_)));
     }
     headers = headers.substr(i + 1);
 
     i = headers.find("\r\n");
     if (headers.substr(0, i) != kServerHttpVersion) {
-        return std::unexpected(StatusCode::HttpVersionNotSupported);
+        return std::unexpected(ServerErr(
+            StatusCode::HttpVersionNotSupported,
+            "Server supports: " + std::string(kServerHttpVersion)));
     }
     headers = headers.substr(i + 2);
 
@@ -94,13 +99,13 @@ RequestParser::RequestParser(std::size_t headers_limit, std::size_t body_limit, 
     request_target_limit_(request_target_limit)
 {}
 
-std::expected<Request, http::StatusCode> RequestParser::parse_request(Connection& conn) noexcept
+std::expected<Request, ServerErr> RequestParser::parse_request(Connection& conn) noexcept
 {
     Connection::ReadResult res = conn.read_until("\r\n\r\n", headers_limit_);
     if (res.status == StatusCode::ContentTooLarge) {
-        return std::unexpected(StatusCode::RequestHeaderFieldsTooLarge);
+        return std::unexpected(ServerErr(StatusCode::RequestHeaderFieldsTooLarge));
     } else if (res.status != StatusCode::Ok) {
-        return std::unexpected(res.status);
+        return std::unexpected(ServerErr(res.status));
     }
 
     // Add for easier headers parsing
@@ -111,13 +116,13 @@ std::expected<Request, http::StatusCode> RequestParser::parse_request(Connection
         return std::unexpected(req.error());
     }
     if (!req->host) {
-        return std::unexpected(StatusCode::BadRequest);
+        return std::unexpected(ServerErr(StatusCode::BadRequest, "Missing Host Header"));
     }
 
     if (req->content_length > 0) {
         res = conn.read_until("", body_limit_);
         if (res.status != StatusCode::Ok) {
-            return std::unexpected(res.status);
+            return std::unexpected(ServerErr(res.status));
         }
         req->body = std::move(res.data);
     }

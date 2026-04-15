@@ -2,6 +2,15 @@
 
 using namespace http;
 
+
+ServerErr::ServerErr(StatusCode code)
+    : code(code)
+{}
+
+ServerErr::ServerErr(StatusCode code, std::string&& msg)
+    : code(code), message(msg)
+{}
+
 RequestMethod http::to_request_method(std::string_view str)
 {
     if (str == "GET") return RequestMethod::Get;
