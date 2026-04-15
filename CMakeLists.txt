@@ -34,8 +34,10 @@ target_compile_options(http_server PRIVATE -Wall -Wextra -Wpedantic)
 # ---------------------------------------------------------
 # Setup Testing
 # ---------------------------------------------------------
-
 enable_testing()
+add_subdirectory(tests EXCLUDE_FROM_ALL)
 
-# This MUST be at the end, so the tests can see 'http_server_core'
-add_subdirectory(tests)
+# ---------------------------------------------------------
+# Setup Examples
+# ---------------------------------------------------------
+add_subdirectory(examples EXCLUDE_FROM_ALL)
