@@ -50,9 +50,9 @@ void Server::send_error_response(Connection& conn, ServerErr err)
 {
     std::string resp_body =
         "{\r\n"
-        "\t\"code\": \"" + to_string(err.code) + "\"\r\n"
-        "\t\"message\": \"" + err.message + "\"\r\n"
-        "}";
+        "    \"code\": \"" + to_string(err.code) + "\"\r\n"
+        "    \"message\": \"" + err.message + "\"\r\n"
+        "}\r\n";
     std::string response =
         "HTTP/1.1 " + std::to_string((int)err.code) + " " + to_string(err.code) + "\r\n"
         "Content-Type: application/json\r\n"

@@ -41,8 +41,9 @@ std::expected<Request, ServerErr> RequestParser::parse_headers(std::string_view 
     std::size_t i = headers.find(' ');
     req.method = to_request_method(headers.substr(0, i));
     if (req.method == RequestMethod::None) {
-        return std::unexpected(
-            ServerErr(StatusCode::NotImplemented, "Request Method Not Implemented"));
+        return std::unexpected(ServerErr(
+            StatusCode::NotImplemented,
+            "Unknown Request Method -> " + std::string(headers.substr(0, i))));
     }
     headers = headers.substr(i + 1);
 
@@ -53,7 +54,7 @@ std::expected<Request, ServerErr> RequestParser::parse_headers(std::string_view 
     if (req.relative_path.size() > request_target_limit_) {
         return std::unexpected(ServerErr(
             StatusCode::UriTooLong,
-            "Maximum Uri size is: " + std::to_string(request_target_limit_)));
+            "Maximum Uri size is -> " + std::to_string(request_target_limit_)));
     }
     headers = headers.substr(i + 1);
 
@@ -61,7 +62,7 @@ std::expected<Request, ServerErr> RequestParser::parse_headers(std::string_view 
     if (headers.substr(0, i) != kServerHttpVersion) {
         return std::unexpected(ServerErr(
             StatusCode::HttpVersionNotSupported,
-            "Server supports: " + std::string(kServerHttpVersion)));
+            "Server supports -> " + std::string(kServerHttpVersion)));
     }
     headers = headers.substr(i + 2);
 
