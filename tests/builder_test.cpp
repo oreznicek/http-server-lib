@@ -1,8 +1,43 @@
 #include "test_common.hpp"
+#include "test_helpers.hpp"
 
 #include <http/server.hpp>
 
 #include <utility>
+
+TEST_CASE(set_port, "Running server on specific port")
+{
+    uint16_t port = 8081;
+    bool result;
+
+    {
+        std::cout << "Create new HTTP server and bind it to port " << port << std::endl;
+        http::Server srv = http::ServerBuilder()
+            .set_port(port)
+            .build();
+
+        std::cout << "Trying to connect to server on port " << port << " ... ";
+        try {
+            std::ignore = net::ClientSocket(net::SocketAddr4(port));
+            std::cout << "[SUCCESS]" << std::endl;
+            result = true;
+        } catch (std::runtime_error) {
+            std::cout << "[FAILED]" << std::endl;
+            result = false;
+        }
+    }
+    std::cout << "Server was destroyed, so the port shouldn't be bound" << std::endl;
+
+    std::cout << "Trying to connect to server on port " << port << " ... ";
+    try {
+        std::ignore = net::ClientSocket(net::SocketAddr4(port));
+        std::cout << "[SUCCESS]" << std::endl;
+        return false;
+    } catch (std::runtime_error) {
+        std::cout << "[FAILED]" << std::endl;
+        return result;
+    }
+}
 
 TEST_CASE(only_ipv4, "Enable only IPv4")
 {
@@ -12,12 +47,11 @@ TEST_CASE(only_ipv4, "Enable only IPv4")
         .disable_ipv6()
         .build();
 
-    timeval timeout = { .tv_sec = 0, .tv_usec = 3000 };
     bool result;
 
     std::cout << "Trying to connect to server with IPv4 ... ";
     try {
-        std::ignore = net::ClientSocket(srv.get_addr(), &timeout);
+        std::ignore = net::ClientSocket(srv.get_addr());
         std::cout << "[SUCCESS]" << std::endl;
         result = true;
     } catch (std::runtime_error) {
@@ -27,7 +61,7 @@ TEST_CASE(only_ipv4, "Enable only IPv4")
 
     std::cout << "Trying to connect to server with IPv6 ... ";
     try {
-        std::ignore = net::ClientSocket(srv.get_addr6(), &timeout);
+        std::ignore = net::ClientSocket(srv.get_addr6());
         std::cout << "[SUCCESS]" << std::endl;
         return false;
     } catch (std::runtime_error) {
@@ -44,12 +78,11 @@ TEST_CASE(only_ipv6, "Enable only IPv6")
         .disable_ipv4()
         .build();
 
-    timeval timeout = { .tv_sec = 0, .tv_usec = 3000 };
     bool result;
 
     std::cout << "Trying to connect to server with IPv4 ... ";
     try {
-        std::ignore = net::ClientSocket(srv.get_addr(), &timeout);
+        std::ignore = net::ClientSocket(srv.get_addr());
         std::cout << "[SUCCESS]" << std::endl;
         result = false;
     } catch (std::runtime_error) {
@@ -59,7 +92,7 @@ TEST_CASE(only_ipv6, "Enable only IPv6")
 
     std::cout << "Trying to connect to server with IPv6 ... ";
     try {
-        std::ignore = net::ClientSocket(srv.get_addr6(), &timeout);
+        std::ignore = net::ClientSocket(srv.get_addr6());
         std::cout << "[SUCCESS]" << std::endl;
         return result;
     } catch (std::runtime_error) {
@@ -68,7 +101,39 @@ TEST_CASE(only_ipv6, "Enable only IPv6")
     }
 }
 
-TEST_CASE(ip_disabled, "Both IPv4 and IPv6 are disabled")
+TEST_CASE(both_ip_enabled, "Both IPv4 and IPv6 are enabled")
+{
+    http::Server srv = http::ServerBuilder()
+        .set_port(http::kSelectRandomPort)
+        .enable_ipv4()
+        .enable_ipv6()
+        .build();
+
+    timeval timeout = { .tv_sec = 0, .tv_usec = 3000 };
+    bool result;
+
+    std::cout << "Trying to connect to server with IPv4 ... ";
+    try {
+        std::ignore = net::ClientSocket(srv.get_addr());
+        std::cout << "[SUCCESS]" << std::endl;
+        result = true;
+    } catch (std::runtime_error) {
+        std::cout << "[FAILED]" << std::endl;
+        result = false;
+    }
+
+    std::cout << "Trying to connect to server with IPv6 ... ";
+    try {
+        std::ignore = net::ClientSocket(srv.get_addr6());
+        std::cout << "[SUCCESS]" << std::endl;
+        return result;
+    } catch (std::runtime_error) {
+        std::cout << "[FAILED]" << std::endl;
+        return false;
+    }
+}
+
+TEST_CASE(both_ip_disabled, "Both IPv4 and IPv6 are disabled")
 {
     std::cout << "Check that ServerBuilder throws exception ... " << std::endl;
     try {
@@ -81,4 +146,57 @@ TEST_CASE(ip_disabled, "Both IPv4 and IPv6 are disabled")
     } catch (std::runtime_error) {
         return true;
     }
+}
+
+TEST_CASE(headers_size_limit)
+{
+    std::string ok_request =
+        "GET / HTTP/1.1\r\n"
+        "Host: www.example.com\r\n\r\n";
+
+    http::Server srv = http::ServerBuilder()
+        .set_port(http::kSelectRandomPort)
+        .set_request_headers_size_limit(ok_request.size())
+        .build();
+
+    http::StatusCode err_code = http::StatusCode::RequestHeaderFieldsTooLarge;
+    std::string err_request =
+        "GET / HTTP/1.1\r\n"
+        "Host: www.example1.com\r\n\r\n";
+
+    bool result = test_status_code_diff(srv, ok_request, err_code);
+    result = result & test_status_code_eq(srv, err_request, err_code);
+
+    return result;
+}
+
+TEST_CASE(body_size_limit)
+{
+    std::string ok_body = "{\"username\": \"test_user\"}";
+
+    http::Server srv = http::ServerBuilder()
+        .set_port(http::kSelectRandomPort)
+        .set_request_body_size_limit(ok_body.size())
+        .build();
+
+    http::StatusCode err_code = http::StatusCode::ContentTooLarge;
+    std::string ok_request =
+        "POST /api/users HTTP/1.1\r\n"
+        "Host: localhost:8080\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: " + std::to_string(ok_body.size()) + "\r\n\r\n"
+        + ok_body;
+    std::string err_body = "{\"username\": \"test_user1\"}";
+    std::string err_request =
+        "POST /api/users HTTP/1.1\r\n"
+        "Host: localhost:8080\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: " + std::to_string(err_body.size()) + "\r\n\r\n"
+        + err_body;
+
+
+    bool result = test_status_code_diff(srv, ok_request, err_code);
+    result = result & test_status_code_eq(srv, err_request, err_code);
+
+    return result;
 }
