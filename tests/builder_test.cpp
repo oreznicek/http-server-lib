@@ -5,6 +5,12 @@
 
 #include <utility>
 
+/* ServerBuilder methods which are not tested in this file and why:
+ *  - set_public_dir()          ... not implemented in the Server
+ *  - set_request_target_size() ... tested in "Uri Too Long" in parser_test
+ *  - set_request_timeout()     ... tested in empty_request in parser_test
+ */
+
 TEST_CASE(set_port, "Running server on specific port")
 {
     uint16_t port = 8081;
