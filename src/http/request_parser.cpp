@@ -120,12 +120,14 @@ std::expected<Request, ServerErr> RequestParser::parse_request(Connection& conn)
         return std::unexpected(ServerErr(StatusCode::BadRequest, "Missing Host Header"));
     }
 
-    if (req->content_length > 0) {
-        res = conn.read_until("", body_limit_);
+    if (req->content_length > 0 && req->content_length <= body_limit_) {
+        res = conn.read_until("", req->content_length);
         if (res.status != StatusCode::Ok) {
             return std::unexpected(ServerErr(res.status));
         }
         req->body = std::move(res.data);
+    } else {
+        return std::unexpected(ServerErr(StatusCode::ContentTooLarge));
     }
 
     return req;
