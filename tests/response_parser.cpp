@@ -16,12 +16,12 @@ Response::Response(StatusCode code)
 
 Response ResponseParser::parse_response(Connection& conn) noexcept
 {
-    Connection::ReadResult res = conn.read_until("\r\n", 500);
-    if (res.status != StatusCode::Ok) {
+    auto res = conn.read_until("\r\n", 500);
+    if (!res.has_value()) {
         return Response();
     }
 
-    std::string_view status_line = res.data;
+    std::string_view status_line = *res;
     std::size_t i = status_line.find(' ');
     if (status_line.substr(0, i) != kServerHttpVersion) {
         return Response();

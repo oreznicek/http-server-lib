@@ -102,17 +102,18 @@ RequestParser::RequestParser(std::size_t headers_limit, std::size_t body_limit, 
 
 std::expected<Request, ServerErr> RequestParser::parse_request(Connection& conn) noexcept
 {
-    Connection::ReadResult res = conn.read_until("\r\n\r\n", headers_limit_);
-    if (res.status == StatusCode::ContentTooLarge) {
-        return std::unexpected(ServerErr(StatusCode::RequestHeaderFieldsTooLarge));
-    } else if (res.status != StatusCode::Ok) {
-        return std::unexpected(ServerErr(res.status));
+    auto headers = conn.read_until("\r\n\r\n", headers_limit_);
+    if (!headers.has_value()) {
+        if (headers.error() == StatusCode::ContentTooLarge) {
+            return std::unexpected(ServerErr(StatusCode::RequestHeaderFieldsTooLarge));
+        }
+        return std::unexpected(ServerErr(headers.error()));
     }
 
     // Add for easier headers parsing
-    res.data += "\r\n";
+    *headers += "\r\n";
 
-    auto req = parse_headers(res.data);
+    auto req = parse_headers(*headers);
     if (!req.has_value()) {
         return std::unexpected(req.error());
     }
@@ -121,11 +122,11 @@ std::expected<Request, ServerErr> RequestParser::parse_request(Connection& conn)
     }
 
     if (req->content_length > 0 && req->content_length <= body_limit_) {
-        res = conn.read_until("", req->content_length);
-        if (res.status != StatusCode::Ok) {
-            return std::unexpected(ServerErr(res.status));
+        auto body = conn.read(req->content_length);
+        if (!body.has_value()) {
+            return std::unexpected(body.error());
         }
-        req->body = std::move(res.data);
+        req->body = std::move(*body);
     } else {
         return std::unexpected(ServerErr(StatusCode::ContentTooLarge));
     }

@@ -4,23 +4,21 @@
 #include "http/http.hpp"
 #include "net/socket.hpp"
 
+#include <expected>
 #include <string>
 #include <string_view>
 
 namespace http {
 
 class Connection {
+    static constexpr int CHUNK = 1024;
     net::ClientSocket csock_;
     std::string leftover_;
+    StatusCode read_chunk(std::string& buffer);
 public:
     Connection(net::ClientSocket&& csock);
-    struct ReadResult {
-        StatusCode status;
-        std::string data;
-        ReadResult(StatusCode status);
-        ReadResult(StatusCode status, std::string&& data);
-    };
-    ReadResult read_until(std::string_view delimiter, std::size_t max_bytes);
+    std::expected<std::string, StatusCode> read_until(std::string_view delimiter, std::size_t max_bytes);
+    std::expected<std::string, StatusCode> read(std::size_t bytes);
     bool send(const std::string& buffer);
 };
 
