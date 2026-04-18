@@ -24,8 +24,7 @@ http::Response send_request_get_response(http::Server& srv, const std::string& r
         srv.run();
     });
 
-    timeval timeout = { .tv_sec = 0, .tv_usec = 3000 };
-    http::Connection conn(net::ClientSocket(srv.get_addr(), &timeout));
+    http::Connection conn(net::ClientSocket(srv.get_addr()));
     http::ResponseParser parser;
 
     std::cout << "Sending request:" << std::endl;

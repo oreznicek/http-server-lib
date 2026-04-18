@@ -115,7 +115,9 @@ ClientSocket::ClientSocket()
 ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const timeval* timeout)
     : Socket(prot)
 {
-    setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
+    if (timeout != nullptr) {
+        setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
+    }
     if (::connect(socket_fd_, sock_addr.data(), sock_addr.size()) == -1) {
         throw std::runtime_error(strerror(errno));
     }
@@ -125,6 +127,14 @@ ClientSocket::ClientSocket(int fd, const timeval* timeout) : Socket(fd)
 {
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
 }
+
+ClientSocket::ClientSocket(const SocketAddr4& sock_addr)
+    : ClientSocket(Protocol::Ipv4, sock_addr, nullptr)
+{}
+
+ClientSocket::ClientSocket(const SocketAddr6& sock_addr)
+    : ClientSocket(Protocol::Ipv6, sock_addr, nullptr)
+{}
 
 ClientSocket::ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout)
     : ClientSocket(Protocol::Ipv4, sock_addr, timeout)

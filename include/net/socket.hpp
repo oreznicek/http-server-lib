@@ -40,6 +40,8 @@ class ClientSocket : public Socket {
 public:
     ClientSocket();
     ClientSocket(int fd, const timeval* timeout);
+    ClientSocket(const SocketAddr4& sock_addr);
+    ClientSocket(const SocketAddr6& sock_addr);
     ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout);
     ClientSocket(const SocketAddr6& sock_addr, const timeval* timeout);
 
