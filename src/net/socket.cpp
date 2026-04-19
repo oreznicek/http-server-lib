@@ -112,6 +112,11 @@ ClientSocket::ClientSocket()
     : Socket()
 {}
 
+
+ClientSocket::ClientSocket(int fd)
+    : Socket(fd)
+{}
+
 ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const timeval* timeout)
     : Socket(prot)
 {
@@ -123,7 +128,8 @@ ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const tim
     }
 }
 
-ClientSocket::ClientSocket(int fd, const timeval* timeout) : Socket(fd)
+ClientSocket::ClientSocket(int fd, const timeval* timeout)
+    : Socket(fd)
 {
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
 }
@@ -143,6 +149,20 @@ ClientSocket::ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout)
 ClientSocket::ClientSocket(const SocketAddr6& sock_addr, const timeval* timeout)
     : ClientSocket(Protocol::Ipv6, sock_addr, timeout)
 {}
+
+std::tuple<ClientSocket, ClientSocket> ClientSocket::create_socketpair()
+{
+    int fds[2];
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
+        std::cerr << "Failed to create socket pair\n";
+        throw std::runtime_error(strerror(errno));
+    }
+
+    ClientSocket dial_sock(fds[0]);
+    ClientSocket answer_sock(fds[1]);
+
+    return {std::move(dial_sock), std::move(answer_sock)};
+}
 
 ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)
 {

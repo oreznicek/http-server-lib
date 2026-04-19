@@ -44,6 +44,7 @@ Connection::Connection(net::ClientSocket&& csock)
 
 std::expected<std::string, StatusCode> Connection::read_until(std::string_view delimiter, std::size_t max_bytes)
 {
+    // TODO: only move max_bytes from letover_ to buffer
     std::string buffer = std::move(leftover_);
 
     while (true) {

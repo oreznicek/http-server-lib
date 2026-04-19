@@ -36,6 +36,7 @@ public:
 };
 
 class ClientSocket : public Socket {
+    ClientSocket(int fd);
     ClientSocket(Protocol prot, const SocketAddr& sock_addr, const timeval* timeout);
 public:
     ClientSocket();
@@ -44,6 +45,8 @@ public:
     ClientSocket(const SocketAddr6& sock_addr);
     ClientSocket(const SocketAddr4& sock_addr, const timeval* timeout);
     ClientSocket(const SocketAddr6& sock_addr, const timeval* timeout);
+
+    static std::tuple<ClientSocket, ClientSocket> create_socketpair();
 
     int recv(char* buffer, std::size_t count);
     bool send(const std::string& buffer);
