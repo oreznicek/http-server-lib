@@ -158,8 +158,9 @@ std::tuple<ClientSocket, ClientSocket> ClientSocket::create_socketpair()
         throw std::runtime_error(strerror(errno));
     }
 
-    ClientSocket dial_sock(fds[0]);
-    ClientSocket answer_sock(fds[1]);
+    timeval timeout = { .tv_sec = 0, .tv_usec = 3000 };
+    ClientSocket dial_sock(fds[0], &timeout);
+    ClientSocket answer_sock(fds[1], &timeout);
 
     return {std::move(dial_sock), std::move(answer_sock)};
 }
