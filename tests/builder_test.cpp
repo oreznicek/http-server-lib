@@ -156,16 +156,17 @@ TEST_CASE(both_ip_disabled, "Both IPv4 and IPv6 are disabled")
 
 TEST_CASE(headers_size_limit)
 {
-    std::string ok_request =
+    std::string ok_headers =
         "GET / HTTP/1.1\r\n"
-        "Host: www.example.com\r\n\r\n";
+        "Host: www.example.com";
 
     http::Server srv = http::ServerBuilder()
         .set_port(http::kSelectRandomPort)
-        .set_request_headers_size_limit(ok_request.size())
+        .set_request_headers_size_limit(ok_headers.size())
         .build();
 
     http::StatusCode err_code = http::StatusCode::RequestHeaderFieldsTooLarge;
+    std::string ok_request = ok_headers + "\r\n\r\n";
     std::string err_request =
         "GET / HTTP/1.1\r\n"
         "Host: www.example1.com\r\n\r\n";
