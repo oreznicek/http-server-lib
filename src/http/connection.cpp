@@ -1,5 +1,7 @@
 #include "http/connection.hpp"
 
+#include <iostream>
+
 using namespace http;
 
 StatusCode Connection::read_chunk(std::string& buffer)
@@ -44,20 +46,27 @@ Connection::Connection(net::ClientSocket&& csock)
 
 std::expected<std::string, StatusCode> Connection::read_until(std::string_view delimiter, std::size_t max_bytes)
 {
-    // TODO: only move max_bytes from letover_ to buffer
-    std::string buffer = std::move(leftover_);
+    std::string buffer;
+    size_t bytes_to_move = std::min(leftover_.size(), max_bytes);
+    buffer.append(leftover_, 0, bytes_to_move);
+    leftover_.erase(0, bytes_to_move);
 
     while (true) {
-        if (buffer.size() > max_bytes) {
-            return std::unexpected(StatusCode::ContentTooLarge);
-        }
         // TODO: Optimization - Can just search for the delimiter in the last two chunks
         std::size_t i = buffer.find(delimiter);
         if (i != std::string::npos) {
-            leftover_ = buffer.substr(i + delimiter.size());
+            leftover_.insert(0, buffer.substr(i + delimiter.size()));
             buffer.resize(i);
+            if (buffer.size() > max_bytes) {
+                return std::unexpected(StatusCode::ContentTooLarge);
+            }
             break;
         }
+
+        if (buffer.size() > max_bytes) {
+            return std::unexpected(StatusCode::ContentTooLarge);
+        }
+
         StatusCode code = read_chunk(buffer);
         if (code != StatusCode::Ok) {
             return std::unexpected(code);
