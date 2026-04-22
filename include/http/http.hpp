@@ -57,6 +57,20 @@ struct Request {
     std::string body;
 };
 
+struct Response {
+    StatusCode code;
+    std::string body;
+    Headers headers;
+
+    Response();
+    Response(StatusCode code);
+    Response(ServerErr err);
+
+    Response& add_body(std::string&& body);
+    Response& add_header(std::string&& key, std::string&& value);
+    std::string to_string() const;
+};
+
 RequestMethod to_request_method(std::string_view str);
 std::string to_string(StatusCode code);
 
