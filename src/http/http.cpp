@@ -27,6 +27,8 @@ std::string http::to_string(StatusCode code)
             return "OK";
         case StatusCode::BadRequest:
             return "Bad Request";
+        case StatusCode::NotFound:
+            return "Not Found";
         case StatusCode::RequestTimeout:
             return "Request Timeout";
         case StatusCode::ContentTooLarge:

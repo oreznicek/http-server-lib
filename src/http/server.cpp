@@ -7,7 +7,7 @@
 using namespace http;
 using namespace net;
 
-ServerBuilder& ServerBuilder::set_public_dir(std::string&& dir) { public_dir_ = dir; return *this; }
+ServerBuilder& ServerBuilder::set_public_dir(const std::filesystem::path& dir) { public_dir_ = dir; return *this; }
 
 ServerBuilder& ServerBuilder::set_port(in_port_t port) { this->port_ = port; return *this; }
 
@@ -16,6 +16,9 @@ ServerBuilder& ServerBuilder::disable_ipv4() { ipv4_ = false; return *this; }
 
 ServerBuilder& ServerBuilder::enable_ipv6() { ipv6_ = true; return *this; }
 ServerBuilder& ServerBuilder::disable_ipv6() { ipv6_ = false; return *this; }
+
+ServerBuilder& ServerBuilder::enable_directory_listing() { list_dir_ = true; return *this; }
+ServerBuilder& ServerBuilder::disable_directory_listing() { list_dir_ = false; return *this; }
 
 ServerBuilder& ServerBuilder::set_request_headers_size_limit(std::size_t limit) { headers_limit_ = limit; return *this; }
 ServerBuilder& ServerBuilder::set_request_body_size_limit(std::size_t limit) { body_limit_ = limit; return *this; }
@@ -27,11 +30,15 @@ Server ServerBuilder::build() {
     if (!ipv4_ && !ipv6_) {
         throw std::runtime_error("At least one from ipv4 and ipv6 flags has to be enabled.");
     }
+    if (!std::filesystem::is_directory(public_dir_)) {
+        throw std::runtime_error("The provided public_dir path is not a directory!");
+    }
     return Server(*this);
 }
 
 Server::Server(const ServerBuilder& b)
     : parser_(b.headers_limit_, b.body_limit_, b.request_target_limit_),
+    router_(b.public_dir_),
     timeout_(b.timeout_),
     is_running_(false)
 {
@@ -73,14 +80,17 @@ void Server::run()
         Connection conn(std::move(csock));
 
         auto req = parser_.parse_request(conn);
+        Response res;
 
         if (req.has_value()) {
-            send_error_response(conn, http::StatusCode::Ok);
+            res = router_.handle_request(*req);
         } else if (req.error().code == StatusCode::None) {
             continue; // client closed
         } else {
-            send_error_response(conn, req.error());
+            res = Response(req.error());
         }
+
+        conn.send(res.to_string());
     }
 }
 

@@ -24,6 +24,7 @@ enum class StatusCode : uint16_t {
 
     // 4xx Client Errors
     BadRequest = 400,
+    NotFound = 404,
     RequestTimeout = 408,
     ContentTooLarge = 413,
     UriTooLong = 414,
