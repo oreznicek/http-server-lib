@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 namespace http {
 
@@ -42,9 +44,12 @@ struct ServerErr {
     ServerErr(StatusCode code, std::string&& msg);
 };
 
+using Header = std::pair<std::string, std::string>;
+using Headers = std::unordered_map<std::string, std::string>;
+
 struct Request {
     RequestMethod method;
-    std::string relative_path;
+    std::string path;
     std::size_t content_length = 0;
     bool keep_alive = true;
     bool close = false;
