@@ -58,7 +58,12 @@ struct Request {
     std::string body;
 };
 
-struct Response {
+
+
+class Response {
+private:
+    static std::string error_template_;
+public:
     StatusCode code;
     std::string body;
     Headers headers;
@@ -70,6 +75,8 @@ struct Response {
     Response& add_body(std::string&& body);
     Response& add_header(std::string&& key, std::string&& value);
     std::string to_string() const;
+
+    friend class ServerBuilder;
 };
 
 RequestMethod to_request_method(std::string_view str);

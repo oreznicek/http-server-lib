@@ -1,6 +1,8 @@
 #include "http/http.hpp"
 #include "http/server.hpp"
 
+#include <format>
+
 using namespace http;
 
 ServerErr::ServerErr(StatusCode code)
@@ -49,6 +51,38 @@ std::string http::to_string(StatusCode code)
     return "";
 }
 
+constexpr std::string_view kDefaultErrorTemplate = R"html(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Error {0}</title>
+    <style>
+        body {{
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: center;
+        }}
+        h1 {{ margin: 0; font-size: 8rem; color: #e74c3c; }}
+        p {{ margin: 0; font-size: 3rem; color: #666; }}
+    </style>
+</head>
+<body>
+    <div>
+        <h1>{0}</h1>
+        <p>{1}</p>
+    </div>
+</body>
+</html>
+)html";
+
+std::string Response::error_template_(kDefaultErrorTemplate);
 
 Response::Response()
     : code(StatusCode::None), body("")
@@ -61,13 +95,10 @@ Response::Response(StatusCode code)
 Response::Response(ServerErr err)
     : Response(err.code)
 {
-    add_body(
-        "{\r\n"
-        "    \"code\": \"" + ::to_string(err.code) + "\",\r\n"
-        "    \"message\": \"" + err.message + "\"\r\n"
-        "}\r\n"
-    );
-    add_header("Content-Type", "application/json");
+    int code = (int)err.code;
+    std::string message = err.message.empty() ? ::to_string(err.code) : std::move(err.message);
+    add_body(std::vformat(error_template_, std::make_format_args(code, message)));
+    add_header("Content-Type", "text/html");
 }
 
 Response& Response::add_body(std::string&& body)
