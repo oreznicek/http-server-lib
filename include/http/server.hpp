@@ -55,9 +55,7 @@ class Server {
     handlers::Router router_;
     timeval timeout_;
     bool is_running_;
-    // public dir
     Server(const ServerBuilder&);
-    void send_error_response(Connection& conn, ServerErr err);
 public:
     Server() = delete;
     void run();

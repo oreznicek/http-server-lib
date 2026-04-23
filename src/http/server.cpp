@@ -49,23 +49,6 @@ Server::Server(const ServerBuilder& b)
     } else {
         ssock_ = ServerSocket(SocketAddr46(b.port_));
     }
-
-    // public dir
-}
-
-void Server::send_error_response(Connection& conn, ServerErr err)
-{
-    std::string resp_body =
-        "{\r\n"
-        "    \"code\": \"" + to_string(err.code) + "\"\r\n"
-        "    \"message\": \"" + err.message + "\"\r\n"
-        "}\r\n";
-    std::string response =
-        "HTTP/1.1 " + std::to_string((int)err.code) + " " + to_string(err.code) + "\r\n"
-        "Content-Type: application/json\r\n"
-        "Content-Length: " + std::to_string(resp_body.size()) + "\r\n"
-        "\r\n" + resp_body;
-    conn.send(response);
 }
 
 void Server::run()
