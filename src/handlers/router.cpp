@@ -114,10 +114,6 @@ Response Router::serve_static_file(const std::string& uri) const
         .add_body(std::move(body));
 }
 
-Router::Router(std::filesystem::path public_dir, bool list_dir)
-    : public_dir_(std::move(public_dir)), list_dir_(list_dir)
-{}
-
 void Router::add_route(std::string&& path, http::RequestMethod method, HandlerFunc&& func)
 {
     std::string clean_path = normalize_uri(path);

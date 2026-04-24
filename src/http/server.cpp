@@ -1,13 +1,15 @@
 #include "http/server.hpp"
 
 #include <stdexcept>
-#include <iostream>
 #include <string>
 
 using namespace http;
 using namespace net;
 
-ServerBuilder& ServerBuilder::set_public_dir(const std::filesystem::path& dir) { public_dir_ = dir; return *this; }
+ServerBuilder& ServerBuilder::set_public_dir(const std::filesystem::path& public_dir) { router_.public_dir_ = public_dir; return *this; }
+ServerBuilder& ServerBuilder::set_error_page_template(std::string&& err_template) { Response::error_template_ = std::move(err_template); return *this; }
+ServerBuilder& ServerBuilder::enable_directory_listing() { router_.list_dir_ = true; return *this; }
+ServerBuilder& ServerBuilder::disable_directory_listing() { router_.list_dir_ = false; return *this; }
 
 ServerBuilder& ServerBuilder::set_port(in_port_t port) { this->port_ = port; return *this; }
 
@@ -17,20 +19,17 @@ ServerBuilder& ServerBuilder::disable_ipv4() { ipv4_ = false; return *this; }
 ServerBuilder& ServerBuilder::enable_ipv6() { ipv6_ = true; return *this; }
 ServerBuilder& ServerBuilder::disable_ipv6() { ipv6_ = false; return *this; }
 
-ServerBuilder& ServerBuilder::enable_directory_listing() { list_dir_ = true; return *this; }
-ServerBuilder& ServerBuilder::disable_directory_listing() { list_dir_ = false; return *this; }
-
 ServerBuilder& ServerBuilder::set_request_headers_size_limit(std::size_t limit) { headers_limit_ = limit; return *this; }
 ServerBuilder& ServerBuilder::set_request_body_size_limit(std::size_t limit) { body_limit_ = limit; return *this; }
 ServerBuilder& ServerBuilder::set_request_target_size_limit(std::size_t limit) { request_target_limit_ = limit; return *this; }
 
-ServerBuilder& ServerBuilder::set_request_timeout(const struct timeval& timeout) { this->timeout_ = timeout; return *this; }
+ServerBuilder& ServerBuilder::set_request_timeout(const timeval& timeout) { this->timeout_ = timeout; return *this; }
 
 Server ServerBuilder::build() {
     if (!ipv4_ && !ipv6_) {
         throw std::runtime_error("At least one from ipv4 and ipv6 flags has to be enabled.");
     }
-    if (!std::filesystem::is_directory(public_dir_)) {
+    if (!std::filesystem::is_directory(router_.public_dir_)) {
         throw std::runtime_error("The provided public_dir path is not a directory!");
     }
     return Server(*this);
@@ -38,7 +37,7 @@ Server ServerBuilder::build() {
 
 Server::Server(const ServerBuilder& b)
     : parser_(b.headers_limit_, b.body_limit_, b.request_target_limit_),
-    router_(b.public_dir_),
+    router_(b.router_),
     timeout_(b.timeout_),
     is_running_(false)
 {
