@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Page Demonstration</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+    <div class="container">
+        <h1>HTTP Server Demo</h1>
+            <p>This is a demonstration of how you can set up your <b>custom error template pages</b> in this C++ HTTP server library.</p>
+        <p>If you click the button below, it will attempt to navigate to the following undefined route:</p>
+        <div class="code-box">/api/v1/trigger-random-error-page</div>
+            <p>Since the C++ <code>Router</code> does not have this path registered, and there is no file on that specific path in the public directory. It should safely catch the error, format the page and return a custom 404 response!</p>
+        <a href="/api/v1/trigger-random-error-page" class="btn-danger">Test the 404 Handler</a>
+    </div>
+</body>
+</html>
