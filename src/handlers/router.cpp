@@ -1,4 +1,5 @@
 #include "handlers/router.hpp"
+#include "http/http.hpp"
 
 #include <sstream>
 #include <fstream>
@@ -8,7 +9,7 @@ using namespace handlers;
 using namespace http;
 namespace fs = std::filesystem;
 
-std::string handlers::get_mime_type(const fs::path& path)
+static std::string get_mime_type(const fs::path& path)
 {
     if (path.extension() == ".html") return "text/html";
     if (path.extension() == ".css")  return "text/css";
@@ -19,41 +20,11 @@ std::string handlers::get_mime_type(const fs::path& path)
     return "application/octet-stream";
 }
 
-std::string handlers::normalize_uri(const std::string& path)
-{
-    std::vector<std::string> parts;
-    std::string token;
-    std::istringstream token_stream(path);
+static Response generate_directory_listing(const fs::path& dir_path, const std::string& relative_path) {
+    std::string html = "<html><head><title>Index of /" + relative_path + "</title></head><body>";
+    html += "<h1>Index of /" + relative_path + "</h1><hr><ul>";
 
-    while (std::getline(token_stream, token, '/')) {
-        if (token == "" || token == ".") {
-            continue;
-        } else if (token == "..") {
-            if (!parts.empty()) {
-                parts.pop_back();
-            }
-        } else {
-            parts.push_back(token);
-        }
-    }
-
-    if (parts.empty()) {
-        return "/";
-    }
-
-    std::string normalized;
-    for (const auto& part : parts) {
-        normalized += "/" + part;
-    }
-
-    return normalized;
-}
-
-Response generate_directory_listing(const fs::path& dir_path, const std::string& uri) {
-    std::string html = "<html><head><title>Index of " + uri + "</title></head><body>";
-    html += "<h1>Index of " + uri + "</h1><hr><ul>";
-
-    if (uri != "/") {
+    if (relative_path != "") {
         html += "<li><a href=\"../\">../ (Parent Directory)</a></li>";
     }
 
@@ -77,14 +48,9 @@ Response generate_directory_listing(const fs::path& dir_path, const std::string&
         .add_body(std::move(html));
 }
 
-Response Router::serve_static_file(const std::string& uri) const
+Response Router::serve_static_file(const std::string& relative_path) const
 {
-    std::string relative_uri = uri;
-    if (!relative_uri.empty() && relative_uri[0] == '/') {
-        relative_uri = relative_uri.substr(1);
-    }
-
-    fs::path target_path = (public_dir_ / relative_uri).lexically_normal();
+    fs::path target_path = (public_dir_ / relative_path).lexically_normal();
 
     if (fs::is_directory(target_path)) {
         fs::path index_path = target_path / "index.html";
@@ -92,7 +58,7 @@ Response Router::serve_static_file(const std::string& uri) const
         if (fs::exists(index_path)) {
             target_path = index_path;
         } else if (list_dir_) {
-            return generate_directory_listing(target_path, uri);
+            return generate_directory_listing(target_path, relative_path);
         }
     }
 
@@ -102,7 +68,7 @@ Response Router::serve_static_file(const std::string& uri) const
 
     std::ifstream file(target_path, std::ios::binary);
     if (!file.is_open()) {
-        return Response(ServerErr(StatusCode::InternalServerError, "Could not open file " + relative_uri + " for reading."));
+        return Response(ServerErr(StatusCode::InternalServerError, "Could not open file " + relative_path + " for reading."));
     }
 
     std::ostringstream buffer;
@@ -114,15 +80,14 @@ Response Router::serve_static_file(const std::string& uri) const
         .add_body(std::move(body));
 }
 
-void Router::add_route(std::string&& path, http::RequestMethod method, HandlerFunc&& func)
+void Router::add_route(std::string&& relative_path, http::RequestMethod method, HandlerFunc&& func)
 {
-    std::string clean_path = normalize_uri(path);
-    routes_[std::move(clean_path)][method] = std::move(func);
+    routes_[std::move(relative_path)][method] = std::move(func);
 }
 
 Response Router::handle_request(const Request& req) const
 {
-    auto path_it = routes_.find(req.path);
+    auto path_it = routes_.find(req.target.relative_path);
     if (path_it != routes_.end()) {
         const auto& method_map = path_it->second;
         auto method_it = method_map.find(req.method);
@@ -131,5 +96,5 @@ Response Router::handle_request(const Request& req) const
         }
     }
     // No custom route was found -> fall back to serving static file
-    return serve_static_file(req.path);
+    return serve_static_file(req.target.relative_path);
 }

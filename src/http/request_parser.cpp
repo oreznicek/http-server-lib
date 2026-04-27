@@ -28,13 +28,17 @@ std::expected<std::string_view, ServerErr> RequestParser::parse_request_line(Req
     raw_buffer = raw_buffer.substr(i + 1);
 
     i = raw_buffer.find(' ');
-    // TODO: Accept different request target forms than relative path
-    // also accept query string in relative path
-    req.path = raw_buffer.substr(0, i);
-    if (req.path.size() > request_target_limit_) {
+    std::string_view raw_req_target = raw_buffer.substr(0, i);
+    if (raw_req_target.size() > request_target_limit_) {
         return std::unexpected(ServerErr(
             StatusCode::UriTooLong,
             "Maximum Uri size is -> " + std::to_string(request_target_limit_)));
+    }
+    auto req_target = RequestTarget::from(raw_req_target);
+    if (!req_target.has_value()) {
+        return std::unexpected(ServerErr(
+            StatusCode::BadRequest,
+            std::move(req_target.error())));
     }
     raw_buffer = raw_buffer.substr(i + 1);
 

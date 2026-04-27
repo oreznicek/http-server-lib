@@ -12,9 +12,6 @@ namespace http {
 
 namespace handlers {
 
-std::string get_mime_type(const std::filesystem::path& path);
-std::string normalize_uri(const std::string& path);
-
 class Router {
 public:
     using HandlerFunc = std::function<http::Response(const http::Request&)>;
