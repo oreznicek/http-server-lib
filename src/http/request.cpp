@@ -1,5 +1,6 @@
 #include "http/request.hpp"
 
+#include <string>
 #include <vector>
 #include <sstream>
 
@@ -12,6 +13,23 @@ RequestMethod http::to_request_method(std::string_view str)
     else if (str == "PUT") return RequestMethod::Put;
     else if (str == "DELETE") return RequestMethod::Delete;
     return RequestMethod::None;
+}
+
+static std::string url_decode(const std::string& encoded) {
+    std::string decoded;
+    decoded.reserve(encoded.length()); // Prevent unnecessary memory allocations
+
+    for (std::size_t i = 0; i < encoded.length(); ++i) {
+        if (encoded[i] == '%' && i + 2 < encoded.length()) {
+            decoded += (char)std::stoi(encoded.substr(i+1, 2), nullptr, 16);
+            i += 2;
+        } else if (encoded[i] == '+') {
+            decoded += ' ';
+        } else {
+            decoded += encoded[i];
+        }
+    }
+    return decoded;
 }
 
 static std::string normalize_path(const std::string& path)
@@ -47,8 +65,8 @@ RequestTarget::RequestTarget()
     : relative_path("")
 {}
 
-RequestTarget::RequestTarget(std::string&& relative_path)
-    : relative_path(normalize_path(relative_path))
+RequestTarget::RequestTarget(std::string&& relative_url)
+    : relative_path(url_decode(normalize_path(relative_url)))
 {}
 
 std::expected<RequestTarget, std::string> RequestTarget::from(std::string_view raw_target)

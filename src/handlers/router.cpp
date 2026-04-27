@@ -50,7 +50,10 @@ Response Router::serve_static_file(const std::string& relative_path) const
         }
     }
 
-    if (!fs::is_regular_file(target_path)) {
+    std::error_code ec;
+    if (!fs::is_regular_file(target_path, ec)) {
+        // TODO: Log this and similar errors
+        //std::cout << ec.message() << std::endl;
         return Response(ServerErr(StatusCode::NotFound));
     }
 
