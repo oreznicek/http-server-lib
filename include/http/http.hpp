@@ -48,6 +48,11 @@ struct ServerErr {
 using Header = std::pair<std::string, std::string>;
 using Headers = std::unordered_map<std::string, std::string>;
 
+namespace header {
+    constexpr std::string_view kContentLength = "content-length";
+    constexpr std::string_view kContentType = "content-type";
+} // end of `http::header` namespace
+
 struct Request {
     RequestMethod method;
     std::string path;
@@ -57,8 +62,6 @@ struct Request {
     bool host = false; // host field present
     std::string body;
 };
-
-
 
 class Response {
 private:
@@ -73,7 +76,7 @@ public:
     Response(ServerErr err);
 
     Response& add_body(std::string&& body);
-    Response& add_header(std::string&& key, std::string&& value);
+    Response& add_header(std::string_view key, std::string&& value);
     std::string to_string() const;
 
     friend class ServerBuilder;

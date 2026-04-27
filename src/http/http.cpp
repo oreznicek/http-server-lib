@@ -98,21 +98,21 @@ Response::Response(ServerErr err)
     int code = (int)err.code;
     std::string message = err.message.empty() ? ::to_string(err.code) : std::move(err.message);
     add_body(std::vformat(error_template_, std::make_format_args(code, message)));
-    add_header("Content-Type", "text/html");
+    add_header(header::kContentType, "text/html");
 }
 
 Response& Response::add_body(std::string&& body)
 {
     if (body.size() > 0) {
-        add_header("Content-Length", std::to_string(body.size()));
+        add_header(header::kContentLength, std::to_string(body.size()));
     }
     this->body = std::move(body);
     return *this;
 }
 
-Response& Response::add_header(std::string&& key, std::string&& value)
+Response& Response::add_header(std::string_view key, std::string&& value)
 {
-    headers.insert_or_assign(std::move(key), std::move(value));
+    headers.insert_or_assign(std::string(key), std::move(value));
     return *this;
 }
 

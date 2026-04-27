@@ -73,7 +73,7 @@ Response generate_directory_listing(const fs::path& dir_path, const std::string&
     html += "</ul><hr></body></html>";
 
     return Response(StatusCode::Ok)
-        .add_header("Content-Type", "text/html")
+        .add_header(header::kContentType, "text/html")
         .add_body(std::move(html));
 }
 
@@ -110,7 +110,7 @@ Response Router::serve_static_file(const std::string& uri) const
     std::string body = buffer.str();
 
     return Response(StatusCode::Ok)
-        .add_header("Content-Type", get_mime_type(target_path))
+        .add_header(header::kContentType, get_mime_type(target_path))
         .add_body(std::move(body));
 }
 
