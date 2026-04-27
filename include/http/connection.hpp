@@ -1,7 +1,7 @@
 #ifndef _HTTP_CONNECTION_HPP
 #define _HTTP_CONNECTION_HPP
 
-#include "http/http.hpp"
+#include "http/response.hpp"
 #include "net/socket.hpp"
 
 #include <expected>

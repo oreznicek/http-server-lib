@@ -1,10 +1,8 @@
 #ifndef _TEST_HELPERS_HPP
 #define _TEST_HELPERS_HPP
 
-#include <http/http.hpp>
+#include <http/response.hpp>
 #include <http/server.hpp>
-
-#include "response_parser.hpp"
 
 #include <string>
 #include <iostream>

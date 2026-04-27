@@ -1,21 +1,12 @@
-#ifndef _HTTP_HPP
-#define _HTTP_HPP
+#ifndef _HTTP_RESPONSE_HPP
+#define _HTTP_RESPONSE_HPP
+
+#include "http/headers.hpp"
 
 #include <cstdint>
-#include <expected>
 #include <string>
-#include <unordered_map>
-#include <utility>
 
 namespace http {
-
-enum class RequestMethod {
-    Get = 0,
-    Post,
-    Put,
-    Delete,
-    None = 999
-};
 
 enum class StatusCode : uint16_t {
     // 2xx Success
@@ -46,32 +37,6 @@ struct ServerErr {
     ServerErr(StatusCode code, std::string&& msg);
 };
 
-using Header = std::pair<std::string, std::string>;
-using Headers = std::unordered_map<std::string, std::string>;
-
-namespace header {
-    constexpr std::string_view kContentLength = "content-length";
-    constexpr std::string_view kContentType = "content-type";
-} // end of `http::header` namespace
-
-class RequestTarget {
-    RequestTarget(std::string&& relative_path);
-public:
-    std::string relative_path;
-    RequestTarget();
-    static std::expected<RequestTarget, std::string> from(std::string_view raw_target);
-};
-
-struct Request {
-    RequestMethod method;
-    RequestTarget target;
-    std::size_t content_length = 0;
-    bool keep_alive = true;
-    bool close = false;
-    bool host = false; // host field present
-    std::string body;
-};
-
 class Response {
 private:
     static std::string error_template_;
@@ -86,12 +51,21 @@ public:
 
     Response& add_body(std::string&& body);
     Response& add_header(std::string_view key, std::string&& value);
+
+    template <typename HeaderTag>
+    Response& add_header(HeaderTag, typename HeaderTag::Value val) {
+        headers.insert_or_assign(
+            std::string(HeaderTag::name), 
+            std::string(HeaderTag::to_string(val))
+        );
+        return *this;
+    }
+
     std::string to_string() const;
 
     friend class ServerBuilder;
 };
 
-RequestMethod to_request_method(std::string_view str);
 std::string to_string(StatusCode code);
 
 } // end of `http` namespace

@@ -1,7 +1,8 @@
 #ifndef _HTTP_PARSER_HPP
 #define _HTTP_PARSER_HPP
 
-#include "http/http.hpp"
+#include "http/headers.hpp"
+#include "http/response.hpp"
 
 #include <expected>
 #include <string_view>

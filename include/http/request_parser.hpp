@@ -1,7 +1,8 @@
 #ifndef _HTTP_REQUEST_PARSER_HPP
 #define _HTTP_REQUEST_PARSER_HPP
 
-#include "http/http.hpp"
+#include "http/request.hpp"
+#include "http/response.hpp"
 #include "http/parser.hpp"
 #include "http/connection.hpp"
 

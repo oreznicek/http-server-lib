@@ -1,10 +1,10 @@
 #ifndef _ROUTER_HPP
 #define _ROUTER_HPP
 
-#include "http/http.hpp"
+#include "http/request.hpp"
+#include "http/response.hpp"
 #include <filesystem>
 #include <functional>
-#include <unordered_map>
 
 namespace http {
     class ServerBuilder; // forward declaration

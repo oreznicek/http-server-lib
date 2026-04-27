@@ -1,7 +1,7 @@
 #include "test_common.hpp"
 #include "test_helpers.hpp"
 
-#include <http/http.hpp>
+#include <http/request.hpp>
 
 TEST_CASE(empty)
 {

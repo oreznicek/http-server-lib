@@ -82,7 +82,7 @@ std::expected<Request, ServerErr> RequestParser::parse_request(Connection& conn)
     for (const auto& [key, value] : *headers) {
         if (key == "Host") {
             req.host = true;
-        } else if (key == "Connection") {
+        } else if (key == header::kConnection) {
             if (value == "keep-alive") {
                 req.keep_alive = true;
             } else if (value == "close") {

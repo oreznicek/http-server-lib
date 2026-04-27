@@ -1,5 +1,4 @@
 #include "handlers/router.hpp"
-#include "http/http.hpp"
 
 #include <sstream>
 #include <fstream>
@@ -8,17 +7,6 @@
 using namespace handlers;
 using namespace http;
 namespace fs = std::filesystem;
-
-static std::string get_mime_type(const fs::path& path)
-{
-    if (path.extension() == ".html") return "text/html";
-    if (path.extension() == ".css")  return "text/css";
-    if (path.extension() == ".js")   return "application/javascript";
-    if (path.extension() == ".png")  return "image/png";
-    if (path.extension() == ".jpg" || path.extension() == ".jpeg") return "image/jpeg";
-    if (path.extension() == ".txt")  return "text/plain";
-    return "application/octet-stream";
-}
 
 static Response generate_directory_listing(const fs::path& dir_path, const std::string& relative_path) {
     std::string html = "<html><head><title>Index of /" + relative_path + "</title></head><body>";
@@ -44,7 +32,7 @@ static Response generate_directory_listing(const fs::path& dir_path, const std::
     html += "</ul><hr></body></html>";
 
     return Response(StatusCode::Ok)
-        .add_header(header::kContentType, "text/html")
+        .add_header(header::kContentType, header::ContentType::Value::TextHtml)
         .add_body(std::move(html));
 }
 
@@ -76,7 +64,7 @@ Response Router::serve_static_file(const std::string& relative_path) const
     std::string body = buffer.str();
 
     return Response(StatusCode::Ok)
-        .add_header(header::kContentType, get_mime_type(target_path))
+        .add_header(header::kContentType, mime::extension_to_type(target_path.extension().native()))
         .add_body(std::move(body));
 }
 
