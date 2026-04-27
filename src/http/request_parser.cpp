@@ -40,6 +40,7 @@ std::expected<std::string_view, ServerErr> RequestParser::parse_request_line(Req
             StatusCode::BadRequest,
             std::move(req_target.error())));
     }
+    req.target = *req_target;
     raw_buffer = raw_buffer.substr(i + 1);
 
     i = raw_buffer.find("\r\n");
