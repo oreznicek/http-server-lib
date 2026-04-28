@@ -61,15 +61,20 @@ void Server::run()
         }
         Connection conn(std::move(csock));
 
-        auto req = parser_.parse_request(conn);
         Response res;
 
-        if (req.has_value()) {
-            res = router_.handle_request(*req);
-        } else if (req.error().code == StatusCode::None) {
-            continue; // client closed
-        } else {
-            res = Response(req.error());
+        try {
+            auto req = parser_.parse_request(conn);
+
+            if (req.has_value()) {
+                res = router_.handle_request(*req);
+            } else if (req.error().code == StatusCode::None) {
+                continue; // client closed
+            } else {
+                res = Response(req.error());
+            }
+        } catch (...) {
+            res = Response(ServerErr(StatusCode::InternalServerError));
         }
 
         conn.send(res.to_string());
