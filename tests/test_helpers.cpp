@@ -36,6 +36,8 @@ http::Response send_request_get_response(http::Server& srv, const std::string& r
         return http::Response();
     }
 
+    //print_lines(res->to_string());
+
     srv.stop();
     return *res;
 }

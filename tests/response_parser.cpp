@@ -55,7 +55,7 @@ std::expected<Response, std::string> ResponseParser::parse_response(Connection& 
 
     res.headers = *headers;
 
-    if (auto it = headers->find("Content-Length"); it != headers->end()) {
+    if (auto it = headers->find(header::kContentLength.data()); it != headers->end()) {
         int content_length;
         try {
             content_length = std::stoi(it->second);

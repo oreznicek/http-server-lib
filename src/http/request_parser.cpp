@@ -1,4 +1,5 @@
 #include "http/request_parser.hpp"
+#include "http/headers.hpp"
 #include "http/server.hpp"
 
 #include <stdexcept>
@@ -80,15 +81,15 @@ std::expected<Request, ServerErr> RequestParser::parse_request(Connection& conn)
     }
 
     for (const auto& [key, value] : *headers) {
-        if (key == "Host") {
+        if (key == header::kHost) {
             req.host = true;
-        } else if (key == header::kConnection) {
-            if (value == "keep-alive") {
+        } else if (key == header::Connection::name) {
+            if (value == header::Connection::kKeepAlive) {
                 req.keep_alive = true;
-            } else if (value == "close") {
+            } else if (value == header::Connection::kClose) {
                 req.close = true;
             }
-        } else if (key == "Content-Length") {
+        } else if (key == header::kContentLength) {
             // TODO: What if it is 0 or negative?
             req.content_length = std::stoi(value);
         }

@@ -21,9 +21,24 @@ namespace header {
         }
     };
 
+    struct Connection {
+        static constexpr std::string_view name = "connection";
+        enum class Value { KeepAlive, Close };
+        static std::string to_string(Value v)
+        {
+            switch (v) {
+                case Value::KeepAlive: return std::string(kKeepAlive);
+            case Value::Close: return std::string(kClose);
+            }
+        }
+        static constexpr std::string_view kKeepAlive = "keep-alive";
+        static constexpr std::string_view kClose = "close";
+    };
+
+    constexpr std::string_view kHost = "host";
     constexpr std::string_view kContentLength = "content-length";
     constexpr ContentType kContentType;
-    constexpr std::string_view kConnection = "connection";
+    constexpr Connection kConnection;
 } // end of `http::header` namespace
 
 } // end of `http` namespace
