@@ -4,15 +4,26 @@
 #include <vector>
 #include <sstream>
 
-using namespace http;
+namespace http {
 
-RequestMethod http::to_request_method(std::string_view str)
+RequestMethod to_request_method(std::string_view str)
 {
     if (str == "GET") return RequestMethod::Get;
     else if (str == "POST") return RequestMethod::Post;
     else if (str == "PUT") return RequestMethod::Put;
     else if (str == "DELETE") return RequestMethod::Delete;
     return RequestMethod::None;
+}
+
+std::string_view to_string(RequestMethod method)
+{
+    switch (method) {
+        case RequestMethod::Get:    return "GET";
+        case RequestMethod::Post:   return "POST";
+        case RequestMethod::Put:    return "PUT";
+        case RequestMethod::Delete: return "DELETE";
+        default:                    return "<?METHOD?>";
+    }
 }
 
 static std::string url_decode(const std::string& encoded) {
@@ -101,3 +112,5 @@ std::expected<RequestTarget, std::string> RequestTarget::from(std::string_view r
 
     return RequestTarget(std::string(buf));
 }
+
+} // end of `http` namespace

@@ -1,5 +1,7 @@
 #include "http/server.hpp"
+#include "logger.hpp"
 
+#include <exception>
 #include <stdexcept>
 #include <string>
 
@@ -10,6 +12,12 @@ ServerBuilder& ServerBuilder::set_public_dir(const std::filesystem::path& public
 ServerBuilder& ServerBuilder::set_error_page_template(std::string&& err_template) { Response::error_template_ = std::move(err_template); return *this; }
 ServerBuilder& ServerBuilder::enable_directory_listing() { router_.list_dir_ = true; return *this; }
 ServerBuilder& ServerBuilder::disable_directory_listing() { router_.list_dir_ = false; return *this; }
+
+ServerBuilder& ServerBuilder::add_route(std::string&& path, http::RequestMethod method, handlers::Router::HandlerFunc&& func)
+{
+    router_.add_route(std::move(path), method, std::move(func));
+    return *this;
+}
 
 ServerBuilder& ServerBuilder::set_port(in_port_t port) { this->port_ = port; return *this; }
 
@@ -50,6 +58,18 @@ Server::Server(const ServerBuilder& b)
     }
 }
 
+void log_exception(std::exception_ptr eptr) {
+    try {
+        if (eptr) {
+            std::rethrow_exception(eptr);
+        }
+    } catch (const std::exception& e) {
+        logger::error("Exception: {}\n", e.what());
+    } catch (...) {
+        logger::error("Unknown exception type occurred.\n");
+    }
+}
+
 void Server::run()
 {
     is_running_ = true;
@@ -61,23 +81,33 @@ void Server::run()
         }
         Connection conn(std::move(csock));
 
-        Response res;
+        Request request;
+        Response response;
 
         try {
             auto req = parser_.parse_request(conn);
 
             if (req.has_value()) {
-                res = router_.handle_request(*req);
+                request = *req;
+                response = router_.handle_request(request);
             } else if (req.error().code == StatusCode::None) {
                 continue; // client closed
             } else {
-                res = Response(req.error());
+                response = Response(req.error());
             }
         } catch (...) {
-            res = Response(ServerErr(StatusCode::InternalServerError));
+            log_exception(std::current_exception());
+            response = Response(ServerErr(StatusCode::InternalServerError));
         }
 
-        conn.send(res.to_string());
+        logger::info("{} /{} -> {} {}",
+            to_string(request.method),
+            request.target.relative_path,
+            static_cast<int>(response.code),
+            to_string(response.code)
+        );
+
+        conn.send(response.to_string());
     }
 }
 

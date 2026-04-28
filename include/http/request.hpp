@@ -33,6 +33,7 @@ struct Request {
 };
 
 RequestMethod to_request_method(std::string_view str);
+std::string_view to_string(RequestMethod method);
 
 } // end of `http` namespace
 

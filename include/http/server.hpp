@@ -30,6 +30,8 @@ public:
     ServerBuilder& enable_directory_listing();
     ServerBuilder& disable_directory_listing();
 
+    ServerBuilder& add_route(std::string&& path, http::RequestMethod method, handlers::Router::HandlerFunc&& func);
+
     ServerBuilder& set_port(in_port_t);
 
     ServerBuilder& enable_ipv4();
