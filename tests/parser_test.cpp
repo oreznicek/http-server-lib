@@ -156,3 +156,22 @@ TEST_CASE(missing_key_value, "Missing Header Key and Value")
         ":\r\n\r\n";
     return test_status_code_eq(srv, request, http::StatusCode::BadRequest);
 }
+
+TEST_CASE(insensitive_key, "Case Insensitive Header Key")
+{
+    http::Server srv = http::ServerBuilder()
+        .set_port(http::kSelectRandomPort)
+        .build();
+
+    std::string request1 =
+        "GET / HTTP/1.1\r\n"
+        "host: www.example.com\r\n\r\n";
+    std::string request2 =
+        "GET / HTTP/1.1\r\n"
+        "hOsT: www.google.com\r\n\r\n";
+
+    bool result = test_status_code_diff(srv, request1, http::StatusCode::BadRequest);
+    result &= test_status_code_diff(srv, request2, http::StatusCode::BadRequest);
+
+    return result;
+}
