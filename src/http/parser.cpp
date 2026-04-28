@@ -1,5 +1,7 @@
 #include "http/parser.hpp"
 
+#include <algorithm>
+
 using namespace http;
 
 Parser::Parser(std::size_t headers_limit)
@@ -13,8 +15,8 @@ std::expected<Header, ServerErr> Parser::parse_header(std::string_view line)
         return std::unexpected(ServerErr(StatusCode::BadRequest, "Missing Header Colon"));
     }
 
-    std::string_view key = line.substr(0, i);
-    if (key.empty()) {
+    std::string_view raw_key = line.substr(0, i);
+    if (raw_key.empty()) {
         return std::unexpected(ServerErr(StatusCode::BadRequest, "Missing Header Key"));
     }
 
@@ -26,6 +28,13 @@ std::expected<Header, ServerErr> Parser::parse_header(std::string_view line)
     while (!value.empty() && std::isspace(value.back())) {
         value.remove_suffix(1);
     }
+
+    std::string key(raw_key);
+
+    std::transform(key.begin(), key.end(), key.begin(),
+        [](unsigned char c) {
+            return std::tolower(c);
+        });
 
     return std::make_pair(std::string(key), std::string(value));
 }
