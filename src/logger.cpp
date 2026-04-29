@@ -2,8 +2,17 @@
 #include "concurrent/thread_pool.hpp"
 
 #include <chrono>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 namespace logger {
+
+static std::ostream* current_out = &std::cout;
+static std::mutex out_mutex;
+static std::fstream log_file;
+static Level current_level = Level::Info;
+static Options current_options;
 
 static std::string_view to_string(Level lvl)
 {
@@ -28,15 +37,22 @@ void detail::write(Level msg_lvl, std::string_view msg)
         return;
     }
 
+    std::ostringstream local_buffer;
+
     if (current_options.show_timestamp) {
-        *current_out << "[" << get_current_time() << "] ";
+        local_buffer << "[" << get_current_time() << "] ";
     }
-
     if (current_options.show_thread_id) {
-        *current_out << "[Thread-" << concurrent::get_short_thread_id() << "] ";
+        local_buffer << "[Thread-" << concurrent::get_short_thread_id() << "] ";
     }
+    local_buffer << to_string(msg_lvl) << " " << msg << std::endl;
 
-    *current_out << to_string(msg_lvl) << " " << msg << std::endl;
+    std::string full_log_line = local_buffer.str();
+
+    {
+        std::unique_lock<std::mutex> lock(out_mutex);
+        *current_out << full_log_line;
+    }
 }
 
 void set_options(Options&& options)

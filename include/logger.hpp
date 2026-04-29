@@ -1,9 +1,7 @@
 #ifndef _LOGGER_HPP
 #define _LOGGER_HPP
 
-#include <iostream>
 #include <format>
-#include <fstream>
 
 namespace logger {
 
@@ -20,14 +18,6 @@ struct Options {
     // TODO: bool log_client_ip = true;
     // TODO: bool log_processing_time = false;
 };
-
-namespace {
-    std::ostream* current_out = &std::cout;
-    std::fstream log_file;
-    Level current_level = Level::Info;
-    Options current_options;
-
-}
 
 namespace detail {
     void write(Level msg_lvl, std::string_view msg);
