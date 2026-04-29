@@ -28,14 +28,14 @@ public:
         std::unique_lock<std::mutex> lock(mutex_);
 
         cv_.wait(lock, [this]() {
-            !queue_.empty() || closed_;
+            return !queue_.empty() || closed_;
         });
 
         if (queue_.empty() && closed_) {
             return false;
         }
 
-        T value = queue_.front();
+        item = std::move(queue_.front());
         queue_.pop();
         return true;
     }

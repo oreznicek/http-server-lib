@@ -16,7 +16,7 @@ inline int get_short_thread_id() {
     return my_short_id;
 }
 
-using Task = std::function<void()>;
+using Task = std::move_only_function<void()>;
 
 class ThreadPool {
     std::vector<std::jthread> workers_;
