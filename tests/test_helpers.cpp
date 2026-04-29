@@ -6,6 +6,7 @@
 #include <thread>
 
 #include <http/server.hpp>
+#include <logger.hpp>
 
 void print_lines(const std::string& str)
 {
@@ -32,7 +33,7 @@ http::Response send_request_get_response(http::Server& srv, const std::string& r
     std::cout << "Parsing response ..." << std::endl;
     auto res = parser.parse_response(conn);
     if (!res.has_value()) {
-        std::cerr << res.error() << std::endl;
+        logger::debug("{}", res.error());
         return http::Response();
     }
 

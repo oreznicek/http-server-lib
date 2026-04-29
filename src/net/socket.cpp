@@ -4,10 +4,11 @@
 #include <arpa/inet.h>
 #include <cerrno>
 #include <cstring>
-#include <iostream>
+#include <format>
 
 #include "net/socket.hpp"
 #include "net/socket_addr.hpp"
+#include "logger.hpp"
 
 using namespace net;
 using namespace http;
@@ -26,7 +27,7 @@ Socket::Socket(Protocol prot)
         kSelectDefaultProtocol
     );
     if (socket_fd_ == -1) {
-        std::cout << "# socket() failed: " << strerror(errno) << std::endl;
+        throw std::runtime_error(std::format("socket() failed: {}", strerror(errno)));
     }
 
     if (prot == Protocol::Ipv6 || prot == Protocol::DualStack) {
@@ -54,8 +55,9 @@ Socket::~Socket()
 void Socket::close()
 {
     if (::close(socket_fd_) == -1) {
-        std::cout << "# close() failed: " << strerror(errno) << std::endl;
+        throw std::runtime_error(std::format("Socket{{ fd = {} }}.close() failed: {}", socket_fd_, strerror(errno)));
     }
+    logger::debug("Socket{{ fd = {} }}.close()", socket_fd_);
     socket_fd_ = kInvalidSocketFd;
 }
 
@@ -74,17 +76,18 @@ ServerSocket::ServerSocket(Protocol prot, SocketAddr&& sock_addr)
     pfd_.fd = socket_fd_;
     pfd_.events = POLLIN;
     if (::bind(socket_fd_, sock_addr.data(), sock_addr.size()) == -1) {
-        std::cout << "# bind() failed: " << strerror(errno) << std::endl;
+        throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.bind() failed: {}", socket_fd_, strerror(errno)));
     }
     sockaddr_in srv_addr;
     socklen_t srv_addr_len = sizeof(sockaddr);
     if (::getsockname(socket_fd_, (sockaddr*)&srv_addr, &srv_addr_len)) {
-        std::cout << "# getsockname() failed: " << strerror(errno) << std::endl;
+        throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.getsockname() failed: {}", socket_fd_, strerror(errno)));
     }
     srv_port_ = ntohs(srv_addr.sin_port);
     if (::listen(socket_fd_, SOMAXCONN) == -1) {
-        std::cout << "# listen() failed: " << strerror(errno) << std::endl;
+        throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.listen() failed: {}", socket_fd_, strerror(errno)));
     }
+    logger::debug("ServerSocket{{ fd = {} }}.listen()", socket_fd_);
 }
 
 ServerSocket::ServerSocket(SocketAddr4&& sock_addr)
@@ -124,8 +127,9 @@ ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const tim
         setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
     }
     if (::connect(socket_fd_, sock_addr.data(), sock_addr.size()) == -1) {
-        throw std::runtime_error(strerror(errno));
+        throw std::runtime_error(std::format("ClientSocket{{ fd = {} }}.connect()", socket_fd_));
     }
+    logger::debug("ClientSocket{{ fd = {} }}.connect()", socket_fd_);
 }
 
 ClientSocket::ClientSocket(int fd, const timeval* timeout)
@@ -154,8 +158,7 @@ std::tuple<ClientSocket, ClientSocket> ClientSocket::create_socketpair()
 {
     int fds[2];
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
-        std::cerr << "Failed to create socket pair\n";
-        throw std::runtime_error(strerror(errno));
+        throw std::runtime_error(std::format("socketpair() failed: {}", strerror(errno)));
     }
 
     timeval timeout = { .tv_sec = 0, .tv_usec = 3000 };
@@ -170,7 +173,7 @@ ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)
     int poll_result = ::poll(&pfd_, 1, kPollTimeout);
 
     if (poll_result < 0) {
-        std::cout << "# poll() failed: " << strerror(errno) << std::endl;
+        throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.poll() failed: {}", socket_fd_, strerror(errno)));
     } else if (poll_result == 0) {
         return ClientSocket();
     }
@@ -178,7 +181,7 @@ ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)
     if (pfd_.revents & POLLIN) {
         return accept_connection(sock_addr, timeout);
     }
-    std::cout << "Some error even happened in poll()" << std::endl;
+    throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.poll() failed: Some error event happened", socket_fd_, strerror(errno)));
     return ClientSocket();
 }
 
@@ -187,8 +190,9 @@ ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeva
     socklen_t client_addr_size = sock_addr.size();
     int fd = ::accept(socket_fd_, sock_addr.data(), &client_addr_size);
     if (fd == -1) {
-        std::cout << "# accept() failed: " << strerror(errno) << std::endl;
+        throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.accept_connection() failed: {}", socket_fd_, strerror(errno)));
     }
+    logger::debug("ServerSocket{{ fd = {} }}.accept_connection() -> ClientSocket{{ fd = {} }}", socket_fd_, fd);
     return ClientSocket(fd, timeout);
 }
 
@@ -202,7 +206,8 @@ bool ClientSocket::send(const std::string& buffer)
 {
     int result = ::send(socket_fd_, buffer.c_str(), buffer.size(), 0);
     if (result == -1) {
-        std::cout << "# send() failed: " << strerror(errno) << std::endl;
+        throw std::runtime_error(std::format("ClientSocket{{ fd = {} }}.send() failed: {}", socket_fd_, strerror(errno)));
     }
+    logger::debug("ClientSocket{{ fd = {} }}.send()", socket_fd_);
     return result != -1;
 }

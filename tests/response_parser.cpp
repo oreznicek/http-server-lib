@@ -1,5 +1,6 @@
 #include "response_parser.hpp"
 #include "http/server.hpp"
+#include "logger.hpp"
 
 #include <string>
 #include <string_view>
@@ -36,7 +37,7 @@ std::expected<Response, std::string> ResponseParser::parse_response(Connection& 
 {
     auto buffer = conn.read_until("\r\n\r\n", headers_limit_);
     if (!buffer.has_value()) {
-        return std::unexpected("Error [read response headers]: " + std::to_string((int)buffer.error()));
+        return std::unexpected("[read response headers]: " + std::to_string((int)buffer.error()));
     }
 
     // Add for easier headers parsing
@@ -45,12 +46,12 @@ std::expected<Response, std::string> ResponseParser::parse_response(Connection& 
     Response res;
     auto buf = parse_status_line(res, *buffer);
     if (!buf.has_value()) {
-        return std::unexpected("Error [parse status line]: " + buf.error());
+        return std::unexpected("[parse status line]: " + buf.error());
     }
 
     auto headers = parse_headers(*buf);
     if (!headers.has_value()) {
-        return std::unexpected("Error [parse headers]: " + headers.error().message);
+        return std::unexpected("[parse headers]: " + headers.error().message);
     }
 
     res.headers = *headers;
@@ -64,7 +65,7 @@ std::expected<Response, std::string> ResponseParser::parse_response(Connection& 
         }
         auto body = conn.read(content_length);
         if (!body.has_value()) {
-            return std::unexpected("Error [read body]: " + std::to_string((int)body.error()));
+            return std::unexpected("[read body]: " + std::to_string((int)body.error()));
         }
         res.body = std::move(*body);
     }

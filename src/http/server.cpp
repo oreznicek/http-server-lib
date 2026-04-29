@@ -93,7 +93,7 @@ void Server::handle_client(Connection&& conn)
         response = Response(ServerErr(StatusCode::InternalServerError));
     }
 
-    logger::info("{} /{} -> {} {}\n",
+    logger::info("{} /{} -> {} {}",
         to_string(request.method),
         request.target.relative_path,
         static_cast<int>(response.code),
