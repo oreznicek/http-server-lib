@@ -4,6 +4,7 @@
 #include "http/request_parser.hpp"
 #include "net/socket.hpp"
 #include "handlers/router.hpp"
+#include "concurrent/thread_pool.hpp"
 
 #include <filesystem>
 
@@ -55,9 +56,11 @@ class Server {
     net::ServerSocket ssock_;
     RequestParser parser_;
     handlers::Router router_;
+    concurrent::ThreadPool pool_;
     timeval timeout_;
     bool is_running_;
     Server(const ServerBuilder&);
+    void handle_client(Connection&& conn);
 public:
     Server() = delete;
     void run();

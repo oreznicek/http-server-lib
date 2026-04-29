@@ -4,6 +4,7 @@
 #include <exception>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 using namespace http;
 using namespace net;
@@ -46,6 +47,7 @@ Server ServerBuilder::build() {
 Server::Server(const ServerBuilder& b)
     : parser_(b.headers_limit_, b.body_limit_, b.request_target_limit_),
     router_(b.router_),
+    pool_(std::thread::hardware_concurrency()),
     timeout_(b.timeout_),
     is_running_(false)
 {
@@ -70,6 +72,41 @@ void log_exception(std::exception_ptr eptr) {
     }
 }
 
+void Server::handle_client(Connection&& conn)
+{
+    Request request;
+    Response response;
+
+    try {
+        auto req = parser_.parse_request(conn);
+
+        if (req.has_value()) {
+            request = *req;
+            response = router_.handle_request(request);
+        } else if (req.error().code == StatusCode::None) {
+            return; // client closed
+        } else {
+            response = Response(req.error());
+        }
+    } catch (...) {
+        log_exception(std::current_exception());
+        response = Response(ServerErr(StatusCode::InternalServerError));
+    }
+
+    logger::info("{} /{} -> {} {}\n",
+        to_string(request.method),
+        request.target.relative_path,
+        static_cast<int>(response.code),
+        to_string(response.code)
+    );
+
+    try {
+        conn.send(response.to_string());
+    } catch (...) {
+        log_exception(std::current_exception());
+    }
+}
+
 void Server::run()
 {
     is_running_ = true;
@@ -79,35 +116,9 @@ void Server::run()
         if (!csock.is_valid()) {
             continue;
         }
-        Connection conn(std::move(csock));
-
-        Request request;
-        Response response;
-
-        try {
-            auto req = parser_.parse_request(conn);
-
-            if (req.has_value()) {
-                request = *req;
-                response = router_.handle_request(request);
-            } else if (req.error().code == StatusCode::None) {
-                continue; // client closed
-            } else {
-                response = Response(req.error());
-            }
-        } catch (...) {
-            log_exception(std::current_exception());
-            response = Response(ServerErr(StatusCode::InternalServerError));
-        }
-
-        logger::info("{} /{} -> {} {}",
-            to_string(request.method),
-            request.target.relative_path,
-            static_cast<int>(response.code),
-            to_string(response.code)
-        );
-
-        conn.send(response.to_string());
+        pool_.submit_task([this, conn = Connection(std::move(csock))]() mutable {
+            handle_client(std::move(conn));
+        });
     }
 }
 
