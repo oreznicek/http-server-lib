@@ -5,6 +5,7 @@
 add_custom_target(tests)
 
 add_library(test_main OBJECT test_main.cpp)
+target_link_libraries(test_main PRIVATE http_server)
 
 add_library(test_utils STATIC
     response_parser.cpp
