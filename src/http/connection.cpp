@@ -1,6 +1,5 @@
 #include "http/connection.hpp"
-
-#include <iostream>
+#include "logger.hpp"
 
 using namespace http;
 
@@ -9,9 +8,11 @@ StatusCode Connection::read_chunk(std::string& buffer)
     buffer.resize(buffer.size() + CHUNK);
     int bytes = csock_.recv(&buffer[buffer.size() - CHUNK], CHUNK);
     buffer.resize(buffer.size() - CHUNK + std::max(0, bytes));
+    logger::info("Connection.recv() -> {}", bytes);
 
     if (bytes < 0) {
         // TODO: Add logging of the errors
+        logger::warning("Connection.recv() failed with: {}", SOCK_ERROR_CODE);
 #ifdef _WIN32
         switch (WSAGetLastError()) {
             case WSAEINTR:
@@ -54,6 +55,7 @@ StatusCode Connection::read_chunk(std::string& buffer)
         }
 #endif
     }  else if (bytes == 0) {
+        logger::warning("Connection.recv() received TCP FIN");
         if (buffer.empty()) {// TCP FIN
             return StatusCode::None;
         }

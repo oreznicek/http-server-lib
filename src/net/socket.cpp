@@ -28,13 +28,11 @@ Socket::Socket(Protocol prot)
 {
     constexpr int kSelectDefaultProtocol = 0;
 
-    logger::debug("Trying to create new socket");
     socket_fd_ = socket(
         (prot == Protocol::Ipv4) ? AF_INET : AF_INET6,
         SOCK_STREAM,
         kSelectDefaultProtocol
     );
-    logger::debug("Created new socket");
     if (socket_fd_ == kInvalidSocketFd) {
         throw std::runtime_error(std::format("socket() failed: {}", SOCK_ERROR_CODE));
     }
@@ -72,10 +70,10 @@ Socket::~Socket()
 
 void Socket::close()
 {
+    logger::debug("Socket{{ fd = {} }}.close()", socket_fd_);
     if (CLOSE(socket_fd_) == kSocketError) {
         throw std::runtime_error(std::format("Socket{{ fd = {} }}.close() failed: {}", socket_fd_, SOCK_ERROR_CODE));
     }
-    logger::debug("Socket{{ fd = {} }}.close()", socket_fd_);
     socket_fd_ = kInvalidSocketFd;
 }
 
@@ -102,20 +100,18 @@ ServerSocket::ServerSocket(Protocol prot, SocketAddr&& sock_addr)
         throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.getsockname() failed: {}", socket_fd_, SOCK_ERROR_CODE));
     }
 
-    // 2. Cast to the correct type based on the address family to get the port
     if (srv_addr.ss_family == AF_INET) {
-        // It's IPv4
         srv_port_ = ntohs(((sockaddr_in*)&srv_addr)->sin_port);
     }
     else if (srv_addr.ss_family == AF_INET6) {
-        // It's IPv6
         srv_port_ = ntohs(((sockaddr_in6*)&srv_addr)->sin6_port);
     }
+    logger::debug("ServerSocket{{ fd = {} }}.srv_port_ = {}", socket_fd_, srv_port_);
 
+    logger::debug("ServerSocket{{ fd = {} }}.listen()", socket_fd_);
     if (::listen(socket_fd_, SOMAXCONN) == kSocketError) {
         throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.listen() failed: {}", socket_fd_, SOCK_ERROR_CODE));
     }
-    logger::debug("ServerSocket{{ fd = {} }}.listen()", socket_fd_);
 }
 
 ServerSocket::ServerSocket(SocketAddr4&& sock_addr)
@@ -154,10 +150,10 @@ ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const tim
     if (timeout != nullptr) {
         set_rcv_timeout(socket_fd_, timeout);
     }
+    logger::debug("ClientSocket{{ fd = {} }}.connect()", socket_fd_);
     if (::connect(socket_fd_, sock_addr.data(), sock_addr.size()) == kSocketError) {
         throw std::runtime_error(std::format("ClientSocket{{ fd = {} }}.connect() failed: {}", socket_fd_, SOCK_ERROR_CODE));
     }
-    logger::debug("ClientSocket{{ fd = {} }}.connect()", socket_fd_);
 }
 
 ClientSocket::ClientSocket(int fd, const timeval* timeout)
@@ -202,6 +198,7 @@ std::tuple<ClientSocket, ClientSocket> ClientSocket::create_socketpair()
 
 ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)
 {
+    logger::debug("ServerSocket{{ fd = {} }}.poll()", socket_fd_);
     int poll_result = POLL(&pfd_, 1, kPollTimeout);
 
     if (poll_result < 0) {

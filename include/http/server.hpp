@@ -7,6 +7,7 @@
 #include "concurrent/thread_pool.hpp"
 
 #include <filesystem>
+#include <thread>
 
 namespace http {
 
@@ -25,6 +26,7 @@ class ServerBuilder {
     std::size_t body_limit_ = 4 * 1024 * 1024;
     std::size_t request_target_limit_ = 8 * 1024;
     timeval timeout_{ .tv_sec = 5, .tv_usec = 0 };
+    std::size_t thread_count_ = std::thread::hardware_concurrency();
 public:
     ServerBuilder& set_public_dir(const std::filesystem::path&);
     ServerBuilder& set_error_page_template(std::string&&);
@@ -46,6 +48,8 @@ public:
     ServerBuilder& set_request_target_size_limit(std::size_t);
 
     ServerBuilder& set_request_timeout(const timeval& timeout);
+
+    ServerBuilder& set_thread_count(std::size_t);
 
     Server build();
 

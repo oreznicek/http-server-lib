@@ -29,6 +29,7 @@ public:
                 Task task;
                 while (task_queue_.pop(task)) {
                     task();
+                    task = nullptr;
                 }
             });
         }

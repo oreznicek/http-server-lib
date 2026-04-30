@@ -19,10 +19,6 @@ void print_lines(const std::string& str)
 
 http::Response send_request_get_response(http::Server& srv, const std::string& request)
 {
-    std::jthread srv_thread([&srv]() {
-        srv.run();
-    });
-
     http::Connection conn;
     try {
         conn = http::Connection(net::ClientSocket(srv.get_addr()));
@@ -51,9 +47,18 @@ http::Response send_request_get_response(http::Server& srv, const std::string& r
     return *res;
 }
 
+http::Response create_thread_send_request_get_response(http::Server& srv, const std::string& request)
+{
+    std::jthread srv_thread([&srv]() {
+        srv.run();
+    });
+
+    return send_request_get_response(srv, request);
+}
+
 bool test_status_code_eq(http::Server& srv, const std::string& request, http::StatusCode expected)
 {
-    http::Response res = send_request_get_response(srv, request);
+    http::Response res = create_thread_send_request_get_response(srv, request);
     if (res.code == http::StatusCode::None) {
         return false;
     }
@@ -62,7 +67,7 @@ bool test_status_code_eq(http::Server& srv, const std::string& request, http::St
 
 bool test_status_code_diff(http::Server& srv, const std::string& request, http::StatusCode diff)
 {
-    http::Response res = send_request_get_response(srv, request);
+    http::Response res = create_thread_send_request_get_response(srv, request);
     if (res.code == http::StatusCode::None) {
         return false;
     }
@@ -90,6 +95,17 @@ bool test_response_eq(http::Server& srv, const std::string& request, const http:
             result = false;
         }
     }
+
+    std::cout << "Comparing body ...";
+    bool body = expected.body == res.body;
+    if (body) {
+        std::cout << " [EQUAL]";
+    }
+    else {
+        std::cout << " [NOT EQUAL]";
+    }
+    std::cout << std::endl;
+    result &= body;
 
     return result;
 }

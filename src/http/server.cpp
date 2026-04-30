@@ -34,6 +34,8 @@ ServerBuilder& ServerBuilder::set_request_target_size_limit(std::size_t limit) {
 
 ServerBuilder& ServerBuilder::set_request_timeout(const timeval& timeout) { this->timeout_ = timeout; return *this; }
 
+ServerBuilder& ServerBuilder::set_thread_count(std::size_t count) { thread_count_ = count; return *this; }
+
 Server ServerBuilder::build() {
     if (!ipv4_ && !ipv6_) {
         throw std::runtime_error("At least one from ipv4 and ipv6 flags has to be enabled.");
@@ -47,7 +49,7 @@ Server ServerBuilder::build() {
 Server::Server(const ServerBuilder& b)
     : parser_(b.headers_limit_, b.body_limit_, b.request_target_limit_),
     router_(b.router_),
-    pool_(std::thread::hardware_concurrency()),
+    pool_(b.thread_count_),
     timeout_(b.timeout_),
     is_running_(false)
 {
@@ -102,6 +104,7 @@ void Server::handle_client(Connection&& conn)
 
     try {
         conn.send(response.to_string());
+        logger::debug("Response sent :)");
     } catch (...) {
         log_exception(std::current_exception());
     }

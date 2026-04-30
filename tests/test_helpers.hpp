@@ -8,6 +8,7 @@
 #include <iostream>
 
 http::Response send_request_get_response(http::Server& srv, const std::string& request);
+http::Response create_thread_send_request_get_response(http::Server& srv, const std::string& request);
 
 template<typename T>
 bool test_eq(const T& value, const T& expected)
