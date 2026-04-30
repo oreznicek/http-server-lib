@@ -12,13 +12,33 @@ StatusCode Connection::read_chunk(std::string& buffer)
 
     if (bytes < 0) {
         // TODO: Add logging of the errors
+#ifdef _WIN32
+        switch (WSAGetLastError()) {
+            case WSAEINTR:
+                return read_chunk(buffer);
+            case WSAETIMEDOUT:
+            case WSAEWOULDBLOCK:
+                return StatusCode::RequestTimeout;
+            case WSAECONNRESET:
+            case WSAECONNABORTED:
+                return StatusCode::None;
+            case WSAENOTSOCK:
+            case WSAENOTCONN:
+            case WSAEINVAL:
+            case WSAEOPNOTSUPP:
+            case WSAEBADF:
+                return StatusCode::InternalServerError;
+            default:
+                return StatusCode::None;
+        }
+#else
         switch (errno) {
             case EINTR:
                 return read_chunk(buffer);
             case EAGAIN:
-        #if EAGAIN != EWOULDBLOCK
+    #if EAGAIN != EWOULDBLOCK
             case EWOULDBLOCK:
-        #endif
+    #endif
                 return StatusCode::RequestTimeout;
             case ECONNRESET:
             case ETIMEDOUT:
@@ -32,6 +52,7 @@ StatusCode Connection::read_chunk(std::string& buffer)
             default: // EIO, ENOBUFS, ENOMEM
                 return StatusCode::None;
         }
+#endif
     }  else if (bytes == 0) {
         if (buffer.empty()) {// TCP FIN
             return StatusCode::None;
@@ -39,6 +60,9 @@ StatusCode Connection::read_chunk(std::string& buffer)
     }
     return StatusCode::Ok;
 }
+
+Connection::Connection()
+{}
 
 Connection::Connection(net::ClientSocket&& csock)
     : csock_(std::move(csock))

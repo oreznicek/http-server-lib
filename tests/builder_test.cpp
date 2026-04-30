@@ -24,7 +24,7 @@ TEST_CASE(set_port, "Running server on specific port")
 
         std::cout << "Trying to connect to server on port " << port << " ... ";
         try {
-            std::ignore = net::ClientSocket(net::SocketAddr4(port));
+            std::ignore = net::ClientSocket(net::SocketAddr4("127.0.0.1", port));
             std::cout << "[SUCCESS]" << std::endl;
             result = true;
         } catch (std::runtime_error) {
@@ -36,7 +36,7 @@ TEST_CASE(set_port, "Running server on specific port")
 
     std::cout << "Trying to connect to server on port " << port << " ... ";
     try {
-        std::ignore = net::ClientSocket(net::SocketAddr4(port));
+        std::ignore = net::ClientSocket(net::SocketAddr4("127.0.0.1", port));
         std::cout << "[SUCCESS]" << std::endl;
         return false;
     } catch (std::runtime_error) {

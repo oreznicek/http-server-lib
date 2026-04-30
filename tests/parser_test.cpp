@@ -21,7 +21,7 @@ TEST_CASE(unknown_method, "Unknown Request Method")
     bool result = true;
 
     for (const auto& req : requests) {
-        result = result & test_status_code_eq(srv, req, expected);
+        result &= test_status_code_eq(srv, req, expected);
     }
 
     return result;
@@ -44,7 +44,7 @@ TEST_CASE(missing_host, "Missing Host Header")
     bool result = true;
 
     for (const auto& req : requests) {
-        result = result & test_status_code_eq(srv, req, expected);
+        result &= test_status_code_eq(srv, req, expected);
     }
 
     return result;
@@ -68,7 +68,7 @@ TEST_CASE(invalid_version, "Invalid HTTP version")
     bool result = true;
 
     for (const auto& req : requests) {
-        result = result & test_status_code_eq(srv, req, expected);
+        result &= test_status_code_eq(srv, req, expected);
     }
 
     return result;
@@ -89,7 +89,7 @@ TEST_CASE(long_uri, "Uri Too Long")
         "Host: www.example.com\r\n\r\n";
 
     bool result = test_status_code_eq(srv1, err_request1, http::StatusCode::UriTooLong);
-    result = result & test_status_code_diff(srv1, ok_request1, http::StatusCode::UriTooLong);
+    result &= test_status_code_diff(srv1, ok_request1, http::StatusCode::UriTooLong);
 
     http::Server srv2 = http::ServerBuilder()
         .set_port(http::kSelectRandomPort)
@@ -103,8 +103,8 @@ TEST_CASE(long_uri, "Uri Too Long")
         "GET /fo HTTP/1.1\r\n"
         "Host: www.example.com\r\n\r\n";
 
-    result = result & test_status_code_eq(srv2, err_request2, http::StatusCode::UriTooLong);
-    result = result & test_status_code_diff(srv2, ok_request2, http::StatusCode::UriTooLong);
+    result &= test_status_code_eq(srv2, err_request2, http::StatusCode::UriTooLong);
+    result &= test_status_code_diff(srv2, ok_request2, http::StatusCode::UriTooLong);
 
     return result;
 }

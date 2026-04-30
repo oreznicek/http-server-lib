@@ -1,6 +1,8 @@
 #include "test_common.hpp"
 #include "connection_test.hpp"
 
+#ifdef __linux__
+
 TEST_CASE(ru_simple)
 {
     std::size_t max_bytes = 10;
@@ -117,3 +119,5 @@ TEST_CASE(r_timeout)
     return test_r(answer_conn, 4, http::StatusCode::RequestTimeout);
 
 }
+
+#endif

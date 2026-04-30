@@ -67,7 +67,7 @@ Response Router::serve_static_file(const std::string& relative_path) const
     std::string body = buffer.str();
 
     return Response(StatusCode::Ok)
-        .add_header(header::kContentType, mime::extension_to_type(target_path.extension().native()))
+        .add_header(header::kContentType, mime::extension_to_type(target_path.extension().string()))
         .add_body(std::move(body));
 }
 

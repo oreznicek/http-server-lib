@@ -1,7 +1,4 @@
-#include <sys/socket.h>
-#include <unistd.h>
 #include <stdexcept>
-#include <arpa/inet.h>
 #include <cerrno>
 #include <cstring>
 #include <format>
@@ -13,6 +10,17 @@
 using namespace net;
 using namespace http;
 
+void set_rcv_timeout(socket_t fd, const timeval* timeout) {
+    if (!timeout) return;
+
+#ifdef _WIN32
+    DWORD timeout_ms = (timeout->tv_sec * 1000) + (timeout->tv_usec / 1000);
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout_ms, sizeof(timeout_ms));
+#else
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
+#endif
+}
+
 Socket::Socket()
     : socket_fd_(kInvalidSocketFd)
 {}
@@ -21,18 +29,20 @@ Socket::Socket(Protocol prot)
 {
     constexpr int kSelectDefaultProtocol = 0;
 
+    logger::debug("Trying to create new socket");
     socket_fd_ = socket(
         (prot == Protocol::Ipv4) ? AF_INET : AF_INET6,
         SOCK_STREAM,
         kSelectDefaultProtocol
     );
-    if (socket_fd_ == -1) {
+    logger::debug("Created new socket");
+    if (socket_fd_ == kInvalidSocketFd) {
         throw std::runtime_error(std::format("socket() failed: {}", strerror(errno)));
     }
 
     if (prot == Protocol::Ipv6 || prot == Protocol::DualStack) {
         int on = (prot == Protocol::Ipv6);
-        setsockopt(socket_fd_, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+        setsockopt(socket_fd_, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&on, sizeof(on));
     }
 }
 
@@ -45,6 +55,15 @@ Socket::Socket(Socket&& other) noexcept
     other.socket_fd_ = kInvalidSocketFd;
 }
 
+Socket& Socket::operator=(Socket&& other)
+{
+    if (this != &other) {
+        socket_fd_ = other.socket_fd_;
+        other.socket_fd_ = kInvalidSocketFd;
+    }
+    return *this;
+}
+
 Socket::~Socket()
 {
     if (socket_fd_ != kInvalidSocketFd) {
@@ -54,7 +73,7 @@ Socket::~Socket()
 
 void Socket::close()
 {
-    if (::close(socket_fd_) == -1) {
+    if (sys_close(socket_fd_) == kSocketError) {
         throw std::runtime_error(std::format("Socket{{ fd = {} }}.close() failed: {}", socket_fd_, strerror(errno)));
     }
     logger::debug("Socket{{ fd = {} }}.close()", socket_fd_);
@@ -75,16 +94,26 @@ ServerSocket::ServerSocket(Protocol prot, SocketAddr&& sock_addr)
 {
     pfd_.fd = socket_fd_;
     pfd_.events = POLLIN;
-    if (::bind(socket_fd_, sock_addr.data(), sock_addr.size()) == -1) {
+    if (::bind(socket_fd_, sock_addr.data(), sock_addr.size()) == kSocketError) {
         throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.bind() failed: {}", socket_fd_, strerror(errno)));
     }
-    sockaddr_in srv_addr;
-    socklen_t srv_addr_len = sizeof(sockaddr);
-    if (::getsockname(socket_fd_, (sockaddr*)&srv_addr, &srv_addr_len)) {
-        throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.getsockname() failed: {}", socket_fd_, strerror(errno)));
+    sockaddr_storage srv_addr;
+    socklen_t srv_addr_len = sizeof(srv_addr);
+    if (::getsockname(socket_fd_, (sockaddr*)&srv_addr, &srv_addr_len) == kSocketError) {
+        throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.getsockname() failed: {}", socket_fd_, WSAGetLastError()));
     }
-    srv_port_ = ntohs(srv_addr.sin_port);
-    if (::listen(socket_fd_, SOMAXCONN) == -1) {
+
+    // 2. Cast to the correct type based on the address family to get the port
+    if (srv_addr.ss_family == AF_INET) {
+        // It's IPv4
+        srv_port_ = ntohs(((sockaddr_in*)&srv_addr)->sin_port);
+    }
+    else if (srv_addr.ss_family == AF_INET6) {
+        // It's IPv6
+        srv_port_ = ntohs(((sockaddr_in6*)&srv_addr)->sin6_port);
+    }
+
+    if (::listen(socket_fd_, SOMAXCONN) == kSocketError) {
         throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.listen() failed: {}", socket_fd_, strerror(errno)));
     }
     logger::debug("ServerSocket{{ fd = {} }}.listen()", socket_fd_);
@@ -124,9 +153,9 @@ ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const tim
     : Socket(prot)
 {
     if (timeout != nullptr) {
-        setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
+        set_rcv_timeout(socket_fd_, timeout);
     }
-    if (::connect(socket_fd_, sock_addr.data(), sock_addr.size()) == -1) {
+    if (::connect(socket_fd_, sock_addr.data(), sock_addr.size()) == kSocketError) {
         throw std::runtime_error(std::format("ClientSocket{{ fd = {} }}.connect()", socket_fd_));
     }
     logger::debug("ClientSocket{{ fd = {} }}.connect()", socket_fd_);
@@ -135,7 +164,7 @@ ClientSocket::ClientSocket(Protocol prot, const SocketAddr& sock_addr, const tim
 ClientSocket::ClientSocket(int fd, const timeval* timeout)
     : Socket(fd)
 {
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const void*)timeout, sizeof(timeval));
+    set_rcv_timeout(socket_fd_, timeout);
 }
 
 ClientSocket::ClientSocket(const SocketAddr4& sock_addr)
@@ -156,6 +185,7 @@ ClientSocket::ClientSocket(const SocketAddr6& sock_addr, const timeval* timeout)
 
 std::tuple<ClientSocket, ClientSocket> ClientSocket::create_socketpair()
 {
+#ifdef __linux__
     int fds[2];
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
         throw std::runtime_error(std::format("socketpair() failed: {}", strerror(errno)));
@@ -166,11 +196,14 @@ std::tuple<ClientSocket, ClientSocket> ClientSocket::create_socketpair()
     ClientSocket answer_sock(fds[1], &timeout);
 
     return {std::move(dial_sock), std::move(answer_sock)};
+#else
+    return { ClientSocket(), ClientSocket() };
+#endif
 }
 
 ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)
 {
-    int poll_result = ::poll(&pfd_, 1, kPollTimeout);
+    int poll_result = sys_poll(&pfd_, 1, kPollTimeout);
 
     if (poll_result < 0) {
         throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.poll() failed: {}", socket_fd_, strerror(errno)));
@@ -189,7 +222,7 @@ ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeva
 {
     socklen_t client_addr_size = sock_addr.size();
     int fd = ::accept(socket_fd_, sock_addr.data(), &client_addr_size);
-    if (fd == -1) {
+    if (fd == kInvalidSocketFd) {
         throw std::runtime_error(std::format("ServerSocket{{ fd = {} }}.accept_connection() failed: {}", socket_fd_, strerror(errno)));
     }
     logger::debug("ServerSocket{{ fd = {} }}.accept_connection() -> ClientSocket{{ fd = {} }}", socket_fd_, fd);
@@ -205,7 +238,7 @@ int ClientSocket::recv(char* buffer, std::size_t count)
 bool ClientSocket::send(const std::string& buffer)
 {
     int result = ::send(socket_fd_, buffer.c_str(), buffer.size(), 0);
-    if (result == -1) {
+    if (result == kSocketError) {
         throw std::runtime_error(std::format("ClientSocket{{ fd = {} }}.send() failed: {}", socket_fd_, strerror(errno)));
     }
     logger::debug("ClientSocket{{ fd = {} }}.send()", socket_fd_);

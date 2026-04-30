@@ -1,8 +1,9 @@
 #ifndef _NET_SOCKET_ADDR_HPP
 #define _NET_SOCKET_ADDR_HPP
 
+#include "net/common.hpp"
+
 #include <string>
-#include <arpa/inet.h>
 
 namespace net {
 
@@ -22,6 +23,7 @@ class SocketAddr4 : public SocketAddr {
 public:
     SocketAddr4();
     SocketAddr4(in_port_t port_number);
+    SocketAddr4(const std::string& address, in_port_t port_number);
 };
 
 class SocketAddr6 : public SocketAddr {
@@ -32,6 +34,7 @@ class SocketAddr6 : public SocketAddr {
 public:
     SocketAddr6();
     SocketAddr6(in_port_t port_number);
+    SocketAddr6(const std::string& address, in_port_t port_number);
 };
 
 class SocketAddr46 : public SocketAddr6 {

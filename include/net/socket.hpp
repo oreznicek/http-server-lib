@@ -1,10 +1,9 @@
 #ifndef _NET_SOCKET_HPP
 #define _NET_SOCKET_HPP
 
-#include <poll.h>
-#include <sys/socket.h>
 #include <string>
 
+#include "net/common.hpp"
 #include "net/socket_addr.hpp"
 
 namespace http {
@@ -22,14 +21,14 @@ enum class Protocol {
 /* Wrapper for unix socket */
 class Socket {
 protected:
-    static constexpr int kInvalidSocketFd = -1;
-    int socket_fd_;
+    socket_t socket_fd_;
     Socket();
     Socket(Protocol prot);
     Socket(int fd);
     void close();
 public:
     Socket(Socket&& other) noexcept;
+    Socket& operator=(Socket&& other);
     ~Socket();
     bool is_valid();
     friend class ServerSocket;

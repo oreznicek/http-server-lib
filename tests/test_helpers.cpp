@@ -23,7 +23,15 @@ http::Response send_request_get_response(http::Server& srv, const std::string& r
         srv.run();
     });
 
-    http::Connection conn(net::ClientSocket(srv.get_addr()));
+    http::Connection conn;
+    try {
+        conn = http::Connection(net::ClientSocket(srv.get_addr()));
+    }
+    catch (const std::exception& e) {
+        logger::error("CRASH BEFORE CONNECT: {}", e.what());
+        srv.stop();
+        return http::Response();
+    }
     http::ResponseParser parser;
 
     std::cout << "Sending request:" << std::endl;
