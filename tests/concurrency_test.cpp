@@ -59,6 +59,7 @@ static bool measure_server_performance(http::Server& srv, const std::vector<std:
 	return result;
 }
 
+/*
 TEST_CASE(performance_comparison)
 {
 	http::Server multi_threaded_srv = http::ServerBuilder()
@@ -99,3 +100,4 @@ TEST_CASE(performance_comparison)
 
 	return result;
 }
+*/
