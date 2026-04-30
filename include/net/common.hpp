@@ -14,13 +14,16 @@ using in_port_t = std::uint16_t;
 using optval_t = const char*;
 constexpr int kSocketError = SOCKET_ERROR;
 
-#define sys_poll WSAPoll
-#define sys_close closesocket
+#define POLL WSAPoll
+#define CLOSE closesocket
+#define SOCK_ERROR_CODE WSAGetLastError()
 #else
     // Your existing POSIX headers
 #include <arpa/inet.h>
+#include <cerrno>
 #include <poll.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 using socket_t = int;
 constexpr socket_t kInvalidSocketFd = -1;
@@ -28,8 +31,9 @@ constexpr socket_t kInvalidSocketFd = -1;
 using optval_t = const char*;
 constexpr int kSocketError = -1;
 
-#define sys_poll ::poll
-#define sys_close ::close
+#define POLL ::poll
+#define CLOSE ::close
+#define SOCK_ERROR_CODE errno
 #endif
 
 namespace net {

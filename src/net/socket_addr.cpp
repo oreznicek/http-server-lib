@@ -1,7 +1,7 @@
-#include <stdexcept>
-
 #include "net/socket_addr.hpp"
-#include "logger.hpp"
+
+#include <format>
+#include <stdexcept>
 
 using namespace net;
 
@@ -22,7 +22,7 @@ SocketAddr4::SocketAddr4(const std::string& address, in_port_t port_number)
         throw std::runtime_error("Invalid IPv4 address format: " + address);
     }
     else if (result < 0) {
-        throw std::runtime_error(std::format("inet_pton system error for {} : {}", address, WSAGetLastError()));
+        throw std::runtime_error(std::format("inet_pton system error for {} : {}", address, SOCK_ERROR_CODE));
     }
 }
 
@@ -58,7 +58,7 @@ SocketAddr6::SocketAddr6(const std::string& address, in_port_t port_number)
         throw std::runtime_error("Invalid IPv6 address format: " + address);
     }
     else if (result < 0) {
-        throw std::runtime_error(std::format("inet_pton system error for {} : {}", address, WSAGetLastError()));
+        throw std::runtime_error(std::format("inet_pton system error for {} : {}", address, SOCK_ERROR_CODE));
     }
 }
 
