@@ -111,6 +111,7 @@ static fs::path public_dir = fs::path(std::source_location::current().file_name(
 
 int main()
 {
+    net::Context context;
     std::string err_template(kFancyErrorTemplate);
 
     http::Server srv = http::ServerBuilder()

@@ -28,7 +28,7 @@ protected:
     void close();
 public:
     Socket(Socket&& other) noexcept;
-    Socket& operator=(Socket&& other);
+    Socket& operator=(Socket&& other) noexcept;
     ~Socket();
     bool is_valid();
     friend class ServerSocket;

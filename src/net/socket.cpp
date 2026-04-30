@@ -54,7 +54,7 @@ Socket::Socket(Socket&& other) noexcept
     other.socket_fd_ = kInvalidSocketFd;
 }
 
-Socket& Socket::operator=(Socket&& other)
+Socket& Socket::operator=(Socket&& other) noexcept
 {
     if (this != &other) {
         socket_fd_ = other.socket_fd_;

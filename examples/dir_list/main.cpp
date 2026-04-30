@@ -9,6 +9,7 @@ static fs::path public_dir = fs::path(std::source_location::current().file_name(
 
 int main()
 {
+    net::Context context;
     http::Server srv = http::ServerBuilder()
         .set_public_dir(public_dir)
         .enable_directory_listing()
