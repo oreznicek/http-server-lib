@@ -68,11 +68,11 @@ Socket::~Socket()
     }
 }
 
-void Socket::close()
+void Socket::close() noexcept
 {
     logger::debug("Socket{{ fd = {} }}.close()", socket_fd_);
     if (CLOSE(socket_fd_) == kSocketError) {
-        throw std::runtime_error(std::format("Socket{{ fd = {} }}.close() failed: {}", socket_fd_, SOCK_ERROR_CODE));
+        logger::error("Socket{{ fd = {} }}.close() failed: {}", socket_fd_, SOCK_ERROR_CODE);
     }
     socket_fd_ = kInvalidSocketFd;
 }

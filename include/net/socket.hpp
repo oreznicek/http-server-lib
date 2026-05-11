@@ -25,7 +25,7 @@ protected:
     Socket();
     Socket(Protocol prot);
     Socket(int fd);
-    void close();
+    void close() noexcept;
 public:
     Socket(Socket&& other) noexcept;
     Socket& operator=(Socket&& other) noexcept;
