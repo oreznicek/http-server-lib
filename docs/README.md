@@ -27,11 +27,18 @@ Před sestavením knihovny se ujistěte, že váš systém splňuje následujíc
   * *Windows:* MSVC 2022 (v143 toolset) nebo novější
 * **Build Systém:** CMake verze 3.20 nebo vyšší
 
-### Sestavení knihovny
+### Automatické sestavení knihovny
+
+Projekt zahrnuje automatizované skripty pro sestavení, které nakonfigurují CMake, zkompilují knihovnu, sestaví examples a automaticky spustí testy pro ověření vašeho prostředí.
+
+Otevřete terminál v root složce `project` a spusťe následující příkaz
+ - `./build.sh` pro Linux
+ - `./build.bat` pro Windows
+
+### Manuální sestavení knihovny
 
 Knihovna se sestaví následujícím způsobem. Je potřeba mít nainstalovaný program `CMake`. \
 Uvnitř složky `project` se spustí následující sekvence příkazů:
-
 
 ```
 mkdir <BUILD-DIR>
