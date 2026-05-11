@@ -11,6 +11,16 @@
 
 namespace http {
 
+namespace detail {
+    inline constexpr std::size_t kKilobyte = 1024;
+    inline constexpr std::size_t kMegabyte = 1024 * kKilobyte;
+} // end of `detail` namespace
+
+inline constexpr std::size_t kDefaultHeadersLimit = 8 * detail::kKilobyte;
+inline constexpr std::size_t kDefaultBodyLimit = 4 * detail::kMegabyte;
+inline constexpr std::size_t kDefaultRequestTargetLimit = 8 * detail::kKilobyte;
+inline constexpr time_t kDefaultTimeoutSeconds = 5;
+
 inline constexpr in_port_t kSelectRandomPort = 0;
 inline constexpr in_port_t kServerDefaultPort = 8080;
 inline constexpr std::string_view kServerHttpVersion = "HTTP/1.1";
@@ -22,10 +32,10 @@ class ServerBuilder {
     in_port_t port_ = kServerDefaultPort;
     bool ipv4_ = true;
     bool ipv6_ = true;
-    std::size_t headers_limit_ = 8 * 1024;
-    std::size_t body_limit_ = 4 * 1024 * 1024;
-    std::size_t request_target_limit_ = 8 * 1024;
-    timeval timeout_{ .tv_sec = 5, .tv_usec = 0 };
+    std::size_t headers_limit_ = kDefaultHeadersLimit;
+    std::size_t body_limit_ = kDefaultBodyLimit;
+    std::size_t request_target_limit_ = kDefaultRequestTargetLimit;
+    timeval timeout_{ .tv_sec = kDefaultTimeoutSeconds, .tv_usec = 0 };
     std::size_t thread_count_ = std::thread::hardware_concurrency();
 public:
     ServerBuilder& set_public_dir(const std::filesystem::path&);
