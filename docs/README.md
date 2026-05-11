@@ -10,6 +10,23 @@ Přesné zadání lze nalézt zde [odkaz](/project/docs/project_proposal.md).
 
 ## Uživatelská dokumentace
 
+### Systémové požadavky
+
+Před sestavením knihovny se ujistěte, že váš systém splňuje následující požadavky:
+
+#### Minimální HW požadavky
+* **CPU:** 1 GHz procesor nebo rychlejší
+  * multi-jádrový procesor doporučen pro rychlejší kompilaci a běh knihovny
+* **RAM:** 512 MB
+* **Disk:** 10 MB volného prostoru
+
+#### Minimální SW požadavky
+* **Operační systém:** Linux nebo Windows
+* **Kompilátor:** Musí podporovat **C++23**
+  * *Linux:* GCC 13.0+ nebo Clang 16.0+
+  * *Windows:* MSVC 2022 (v143 toolset) nebo novější
+* **Build Systém:** CMake verze 3.20 nebo vyšší
+
 ### Sestavení knihovny
 
 Knihovna se sestaví následujícím způsobem. Je potřeba mít nainstalovaný program `CMake`. \
