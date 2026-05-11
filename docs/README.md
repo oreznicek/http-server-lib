@@ -242,7 +242,7 @@ void set_log_file(const std::string& filepath);
 
 ## Programátorská dokumentace
 
-Pokud je konfigurace serveru v pořádku, tak se uvnitč `http::ServerBuilder::build()` zavolá konstruktor serveru, kde se vykrade veškerá konfigurace a předá na správná místa a tím nejhlavnějším je, že se vytvoří `ServerSocket`, který naslouchá na dané adrese a čeká až se někdo připojí.
+Pokud je konfigurace serveru v pořádku, tak se uvnitř `http::ServerBuilder::build()` zavolá konstruktor serveru, kde se vykrade veškerá konfigurace a předá na správná místa a tím nejhlavnějším je, že se vytvoří `ServerSocket`, který naslouchá na dané adrese a čeká až se někdo připojí.
 
 Vstupním bodem knihovny je cyklus uvnitř funkce `http::Server::run()`:
 
