@@ -55,6 +55,7 @@ Socket::Socket(Socket&& other) noexcept
 Socket& Socket::operator=(Socket&& other) noexcept
 {
     if (this != &other) {
+        close();
         socket_fd_ = other.socket_fd_;
         other.socket_fd_ = kInvalidSocketFd;
     }
@@ -127,10 +128,9 @@ ServerSocket::ServerSocket(SocketAddr46&& sock_addr)
 ServerSocket& ServerSocket::operator=(ServerSocket&& other) noexcept
 {
     if (this != &other) {
-        socket_fd_ = other.socket_fd_;
+        Socket::operator=(std::move(other));
         pfd_ = other.pfd_;
         srv_port_ = other.srv_port_;
-        other.socket_fd_ = kInvalidSocketFd;
     }
     return *this;
 }
