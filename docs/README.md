@@ -6,7 +6,7 @@
 
 ## Přesné zadání
 
-Přesné zadání lze nalézt zde [odkaz](/project_proposal.md).
+Přesné zadání lze nalézt zde [odkaz](/project/docs/project_proposal.md).
 
 ## Uživatelská dokumentace
 
