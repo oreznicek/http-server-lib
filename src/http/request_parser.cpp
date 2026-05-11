@@ -2,10 +2,6 @@
 #include "http/headers.hpp"
 #include "http/server.hpp"
 
-#include <stdexcept>
-#include <errno.h>
-#include <iostream>
-#include <cctype>
 #include <cstdlib>
 
 using namespace http;
@@ -20,7 +16,7 @@ RequestParser::RequestParser(std::size_t headers_limit, std::size_t body_limit, 
 std::expected<std::string_view, ServerErr> RequestParser::parse_request_line(Request& req, std::string_view raw_buffer)
 {
     std::size_t i = raw_buffer.find(' ');
-    req.method = to_request_method(raw_buffer.substr(0, i));
+    req.method = method::from_string(raw_buffer.substr(0, i));
     if (req.method == RequestMethod::None) {
         return std::unexpected(ServerErr(
             StatusCode::NotImplemented,

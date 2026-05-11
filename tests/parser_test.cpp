@@ -1,7 +1,9 @@
+#include "http/server.hpp"
 #include "test_common.hpp"
 #include "test_helpers.hpp"
 
 #include <array>
+#include <format>
 
 TEST_CASE(unknown_method, "Unknown Request Method")
 {
@@ -10,11 +12,17 @@ TEST_CASE(unknown_method, "Unknown Request Method")
         .build();
 
     std::array<std::string, 2> requests = {
-        "GET-NEW / HTTP/1.1\r\n"
-        "Host: www.example.com\r\n\r\n",
+        std::format(
+            "GET-NEW / {}\r\n"
+            "Host: www.example.com\r\n\r\n",
+            http::kServerHttpVersion
+        ),
 
-        ":] / HTTP/1.1\r\n"
-        "Host: www.example.com\r\n\r\n",
+        std::format(
+            ":] / {}\r\n"
+            "Host: www.example.com\r\n\r\n",
+            http::kServerHttpVersion
+        )
     };
 
     http::StatusCode expected = http::StatusCode::NotImplemented;
@@ -34,10 +42,18 @@ TEST_CASE(missing_host, "Missing Host Header")
         .build();
 
     std::array<std::string, 2> requests = {
-        "GET / HTTP/1.1\r\n\r\n",
+        std::format(
+            "{} / {}\r\n\r\n",
+            http::method::kGet,
+            http::kServerHttpVersion
+        ),
 
-        "GET / HTTP/1.1\r\n"
-        "???: www.example.com\r\n\r\n"
+        std::format(
+            "{} / {}\r\n"
+            "???: www.example.com\r\n\r\n",
+            http::method::kGet,
+            http::kServerHttpVersion
+        )
     };
 
     http::StatusCode expected = http::StatusCode::BadRequest;
@@ -57,11 +73,17 @@ TEST_CASE(invalid_version, "Invalid HTTP version")
         .build();
 
     std::array<std::string, 2> requests = {
-        "GET / HTTP/2.0\r\n"
-        "Host: www.example.com\r\n\r\n",
+        std::format(
+            "{} / HTTP/2.0\r\n"
+            "Host: www.example.com\r\n\r\n",
+            http::method::kGet
+        ),
 
-        "GET / FJKDEF\r\n"
-        "Host: www.example.com\r\n\r\n"
+        std::format(
+            "{} / FJKDEF\r\n"
+            "Host: www.example.com\r\n\r\n",
+            http::method::kGet
+        )
     };
 
     http::StatusCode expected = http::StatusCode::HttpVersionNotSupported;
@@ -81,12 +103,18 @@ TEST_CASE(long_uri, "Uri Too Long")
         .set_request_target_size_limit(7)
         .build();
 
-    std::string err_request1 =
-        "GET /longest HTTP/1.1\r\n"
-        "Host: www.example.com\r\n\r\n";
-    std::string ok_request1 =
-        "GET /longes HTTP/1.1\r\n"
-        "Host: www.example.com\r\n\r\n";
+    std::string err_request1 = std::format(
+        "{} /longest {}\r\n"
+        "Host: www.example.com\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
+    std::string ok_request1 = std::format(
+        "{} /longes {}\r\n"
+        "Host: www.example.com\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
 
     bool result = test_status_code_eq(srv1, err_request1, http::StatusCode::UriTooLong);
     result &= test_status_code_diff(srv1, ok_request1, http::StatusCode::UriTooLong);
@@ -96,12 +124,18 @@ TEST_CASE(long_uri, "Uri Too Long")
         .set_request_target_size_limit(3)
         .build();
 
-    std::string err_request2 =
-        "GET /foo HTTP/1.1\r\n"
-        "Host: www.example.com\r\n\r\n";
-    std::string ok_request2 =
-        "GET /fo HTTP/1.1\r\n"
-        "Host: www.example.com\r\n\r\n";
+    std::string err_request2 = std::format(
+        "{} /foo {}\r\n"
+        "Host: www.example.com\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
+    std::string ok_request2 = std::format(
+        "{} /fo {}\r\n"
+        "Host: www.example.com\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
 
     result &= test_status_code_eq(srv2, err_request2, http::StatusCode::UriTooLong);
     result &= test_status_code_diff(srv2, ok_request2, http::StatusCode::UriTooLong);
@@ -126,10 +160,13 @@ TEST_CASE(missing_colon, "Missing Header Colon")
     http::Server srv = http::ServerBuilder()
         .set_port(http::kSelectRandomPort)
         .build();
-    std::string request =
-        "GET / HTTP/1.1\r\n"
+    std::string request = std::format(
+        "{} / {}\r\n"
         "Host: www.example.com\r\n"
-        "Invalid header\r\n\r\n";
+        "Invalid header\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
     return test_status_code_eq(srv, request, http::StatusCode::BadRequest);
 }
 
@@ -138,10 +175,13 @@ TEST_CASE(missing_key, "Missing Header Key")
     http::Server srv = http::ServerBuilder()
         .set_port(http::kSelectRandomPort)
         .build();
-    std::string request =
-        "GET / HTTP/1.1\r\n"
+    std::string request = std::format(
+        "{} / {}\r\n"
         "Host: www.example.com\r\n"
-        ": only value\r\n\r\n";
+        ": only value\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
     return test_status_code_eq(srv, request, http::StatusCode::BadRequest);
 }
 
@@ -150,10 +190,13 @@ TEST_CASE(missing_key_value, "Missing Header Key and Value")
     http::Server srv = http::ServerBuilder()
         .set_port(http::kSelectRandomPort)
         .build();
-    std::string request =
-        "GET / HTTP/1.1\r\n"
+    std::string request = std::format(
+        "{} / {}\r\n"
         "Host: www.example.com\r\n"
-        ":\r\n\r\n";
+        ":\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
     return test_status_code_eq(srv, request, http::StatusCode::BadRequest);
 }
 
@@ -163,12 +206,18 @@ TEST_CASE(insensitive_key, "Case Insensitive Header Key")
         .set_port(http::kSelectRandomPort)
         .build();
 
-    std::string request1 =
-        "GET / HTTP/1.1\r\n"
-        "host: www.example.com\r\n\r\n";
-    std::string request2 =
-        "GET / HTTP/1.1\r\n"
-        "hOsT: www.google.com\r\n\r\n";
+    std::string request1 = std::format(
+        "{} / {}\r\n"
+        "host: www.example.com\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
+    std::string request2 = std::format(
+        "{} / {}\r\n"
+        "hOsT: www.google.com\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
 
     bool result = test_status_code_diff(srv, request1, http::StatusCode::BadRequest);
     result &= test_status_code_diff(srv, request2, http::StatusCode::BadRequest);

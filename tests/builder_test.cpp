@@ -3,6 +3,7 @@
 
 #include <http/server.hpp>
 
+#include <format>
 #include <utility>
 
 /* ServerBuilder methods which are not tested in this file and why:
@@ -156,9 +157,12 @@ TEST_CASE(both_ip_disabled, "Both IPv4 and IPv6 are disabled")
 
 TEST_CASE(headers_size_limit)
 {
-    std::string ok_headers =
-        "GET / HTTP/1.1\r\n"
-        "Host: www.example.com";
+    std::string ok_headers = std::format(
+        "{} / {}\r\n"
+        "Host: www.example.com",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
 
     http::Server srv = http::ServerBuilder()
         .set_port(http::kSelectRandomPort)
@@ -167,9 +171,12 @@ TEST_CASE(headers_size_limit)
 
     http::StatusCode err_code = http::StatusCode::RequestHeaderFieldsTooLarge;
     std::string ok_request = ok_headers + "\r\n\r\n";
-    std::string err_request =
-        "GET / HTTP/1.1\r\n"
-        "Host: www.example1.com\r\n\r\n";
+    std::string err_request = std::format(
+        "{} / {}\r\n"
+        "Host: www.example1.com\r\n\r\n",
+        http::method::kGet,
+        http::kServerHttpVersion
+    );
 
     bool result = test_status_code_diff(srv, ok_request, err_code);
     result = result & test_status_code_eq(srv, err_request, err_code);
@@ -187,20 +194,29 @@ TEST_CASE(body_size_limit)
         .build();
 
     http::StatusCode err_code = http::StatusCode::ContentTooLarge;
-    std::string ok_request =
-        "POST /api/users HTTP/1.1\r\n"
+    std::string ok_request = std::format(
+        "{} /api/users {}\r\n"
         "Host: localhost:8080\r\n"
         "Content-Type: application/json\r\n"
-        "Content-Length: " + std::to_string(ok_body.size()) + "\r\n\r\n"
-        + ok_body;
+        "Content-Length: {}\r\n\r\n"
+        "{}",
+        http::method::kPost,
+        http::kServerHttpVersion,
+        ok_body.size(),
+        ok_body
+    );
     std::string err_body = "{\"username\": \"test_user1\"}";
-    std::string err_request =
-        "POST /api/users HTTP/1.1\r\n"
+    std::string err_request = std::format(
+        "{} /api/users {}\r\n"
         "Host: localhost:8080\r\n"
         "Content-Type: application/json\r\n"
-        "Content-Length: " + std::to_string(err_body.size()) + "\r\n\r\n"
-        + err_body;
-
+        "Content-Length: {}\r\n\r\n"
+        "{}",
+        http::method::kPost,
+        http::kServerHttpVersion,
+        err_body.size(),
+        err_body
+    );
 
     bool result = test_status_code_diff(srv, ok_request, err_code);
     result = result & test_status_code_eq(srv, err_request, err_code);

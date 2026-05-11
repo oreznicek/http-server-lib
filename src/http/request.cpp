@@ -6,25 +6,25 @@
 
 namespace http {
 
-RequestMethod to_request_method(std::string_view str)
-{
-    if (str == "GET") return RequestMethod::Get;
-    else if (str == "POST") return RequestMethod::Post;
-    else if (str == "PUT") return RequestMethod::Put;
-    else if (str == "DELETE") return RequestMethod::Delete;
-    return RequestMethod::None;
-}
-
-std::string_view to_string(RequestMethod method)
-{
-    switch (method) {
-        case RequestMethod::Get:    return "GET";
-        case RequestMethod::Post:   return "POST";
-        case RequestMethod::Put:    return "PUT";
-        case RequestMethod::Delete: return "DELETE";
-        default:                    return "<?METHOD?>";
+namespace method {
+    RequestMethod from_string(std::string_view str) {
+        if (str == kGet)    return RequestMethod::Get;
+        if (str == kPost)   return RequestMethod::Post;
+        if (str == kPut)    return RequestMethod::Put;
+        if (str == kDelete) return RequestMethod::Delete;
+        return RequestMethod::None;
     }
-}
+
+    std::string to_string(RequestMethod method) {
+        switch (method) {
+            case RequestMethod::Get:    return std::string(kGet);
+            case RequestMethod::Post:   return std::string(kPost);
+            case RequestMethod::Put:    return std::string(kPut);
+            case RequestMethod::Delete: return std::string(kDelete);
+            default:                    return "<?METHOD?>";
+        }
+    }
+} // end of `method` namespace
 
 static std::string url_decode(const std::string& encoded) {
     std::string decoded;

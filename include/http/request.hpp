@@ -14,6 +14,16 @@ enum class RequestMethod {
     None = 999
 };
 
+namespace method {
+    inline constexpr std::string_view kGet = "GET";
+    inline constexpr std::string_view kPost = "POST";
+    inline constexpr std::string_view kPut = "PUT";
+    inline constexpr std::string_view kDelete = "DELETE";
+
+    RequestMethod from_string(std::string_view str);
+    std::string to_string(RequestMethod method);
+} // end of `method` namespace
+
 class RequestTarget {
     RequestTarget(std::string&& relative_path);
 public:
@@ -31,9 +41,6 @@ struct Request {
     bool host = false; // host field present
     std::string body;
 };
-
-RequestMethod to_request_method(std::string_view str);
-std::string_view to_string(RequestMethod method);
 
 } // end of `http` namespace
 
