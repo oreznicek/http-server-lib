@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Routing Demonstration</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input[type="text"] { padding: 8px; width: 60%; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-post { background-color: #28a745; }
+        .btn-delete { background-color: #dc3545; }
+        .btn-get { background-color: #007bff; }
+        #status { margin-top: 15px; padding: 10px; border-radius: 4px; background-color: #e9ecef; color: #333; font-family: monospace; }
+        ul { background: #f8f9fa; padding: 15px 15px 15px 30px; border-radius: 4px; border: 1px solid #dee2e6; }
+    </style>
+</head>
+<body>
+    <h1>Custom Routing Demonstration</h1>
+    <div class="card">
+        <h3>Add an Item</h3>
+        <input type="text" id="newItemText" placeholder="Enter a new item name...">
+        <button class="btn-post" onclick="addItem()">Send</button>
+    </div>
+    <div class="card">
+        <h3>Database Items</h3>
+        <button class="btn-get" onclick="fetchItems()">Refresh List</button>
+        <button class="btn-delete" onclick="deleteAllItems()" style="float: right;">Delete All</button>
+        <ul id="itemList">
+            <li>Loading items...</li>
+        </ul>
+    </div>
+    <div class="card">
+        <h3>Server Response Status:</h3>
+        <div id="status">Waiting for action...</div>
+    </div>
+    <script>
+        function setStatus(text) {
+            document.getElementById('status').innerText = text;
+        }
+
+        async function fetchItems() {
+            try {
+                const response = await fetch('/api/items');
+                const items = await response.json();
+
+                const listElement = document.getElementById('itemList');
+                listElement.innerHTML = ''; // Clear current list
+
+                if (items.length === 0) {
+                    listElement.innerHTML = '<li><i>Database is empty</i></li>';
+                } else {
+                    items.forEach(item => {
+                        const li = document.createElement('li');
+                        li.textContent = item;
+                        listElement.appendChild(li);
+                    });
+                }
+                setStatus(`GET /api/items - Fetched ${items.length} items successfully.`);
+            } catch (error) {
+                setStatus('Error fetching items: ' + error);
+            }
+        }
+
+        async function addItem() {
+            const input = document.getElementById('newItemText');
+            const text = input.value.trim();
+
+            if (!text) {
+                alert("Please enter some text first!");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/items', {
+                    method: 'POST',
+                    body: text
+                });
+
+                const resultText = await response.text();
+                setStatus(`POST /api/items - [${response.status}] ${resultText}`);
+
+                input.value = '';
+            } catch (error) {
+                setStatus('Error adding item: ' + error);
+            }
+        }
+
+        async function deleteAllItems() {
+            if (!confirm("Are you sure you want to delete all items?")) return;
+
+            try {
+                const response = await fetch('/api/items', {
+                    method: 'DELETE'
+                });
+
+                const resultText = await response.text();
+                setStatus(`DELETE /api/items - [${response.status}] ${resultText}`);
+            } catch (error) {
+                setStatus('Error deleting items: ' + error);
+            }
+        }
+
+        window.onload = fetchItems; // Load items when the page first loads
+    </script>
+</body>
+</html>

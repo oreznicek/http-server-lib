@@ -8,7 +8,7 @@ StatusCode Connection::read_chunk(std::string& buffer)
     buffer.resize(buffer.size() + CHUNK);
     int bytes = csock_.recv(&buffer[buffer.size() - CHUNK], CHUNK);
     buffer.resize(buffer.size() - CHUNK + std::max(0, bytes));
-    logger::info("Connection.recv() -> {}", bytes);
+    logger::debug("Connection.recv() -> {}", bytes);
 
     if (bytes < 0) {
         // TODO: Add logging of the errors

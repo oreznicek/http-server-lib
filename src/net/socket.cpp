@@ -199,7 +199,6 @@ std::tuple<ClientSocket, ClientSocket> ClientSocket::create_socketpair()
 
 ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)
 {
-    logger::debug("ServerSocket{{ fd = {} }}.poll()", socket_fd_);
     int poll_result = POLL(&pfd_, 1, kPollTimeout);
 
     if (poll_result < 0) {

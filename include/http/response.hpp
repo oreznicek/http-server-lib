@@ -11,6 +11,7 @@ namespace http {
 enum class StatusCode : uint16_t {
     // 2xx Success
     Ok = 200,
+    Created = 201,
 
     // 3xx Redirection
 

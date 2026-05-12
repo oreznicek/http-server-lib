@@ -18,6 +18,8 @@ std::string http::to_string(StatusCode code)
     switch (code) {
         case StatusCode::Ok:
             return "OK";
+        case StatusCode::Created:
+            return "Created";
         case StatusCode::BadRequest:
             return "Bad Request";
         case StatusCode::NotFound:
