@@ -42,7 +42,10 @@ public:
 
     void close()
     {
-        closed_ = true;
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            closed_ = true;
+        }
         cv_.notify_all();
     }
 };
