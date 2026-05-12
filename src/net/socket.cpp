@@ -64,13 +64,14 @@ Socket& Socket::operator=(Socket&& other) noexcept
 
 Socket::~Socket()
 {
-    if (socket_fd_ != kInvalidSocketFd) {
-        close();
-    }
+    close();
 }
 
 void Socket::close() noexcept
 {
+    if (socket_fd_ == kInvalidSocketFd) {
+        return;
+    }
     logger::debug("Socket{{ fd = {} }}.close()", socket_fd_);
     if (CLOSE(socket_fd_) == kSocketError) {
         logger::error("Socket{{ fd = {} }}.close() failed: {}", socket_fd_, SOCK_ERROR_CODE);
