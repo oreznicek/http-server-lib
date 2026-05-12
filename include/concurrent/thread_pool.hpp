@@ -35,9 +35,9 @@ public:
         }
     }
 
-    void submit_task(Task&& task)
+    bool submit_task(Task&& task)
     {
-        task_queue_.push(std::move(task));
+        return task_queue_.push(std::move(task));
     }
 
     ~ThreadPool()

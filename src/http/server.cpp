@@ -119,9 +119,13 @@ void Server::run()
         if (!csock.is_valid()) {
             continue;
         }
-        pool_.submit_task([this, conn = Connection(std::move(csock))]() mutable {
+        bool success = pool_.submit_task([this, conn = Connection(std::move(csock))]() mutable {
             handle_client(std::move(conn));
         });
+        if (!success) {
+            logger::error("Trying to submit new task to a closed queue! Stoping the server ...");
+            is_running_ = false;
+        }
     }
 }
 

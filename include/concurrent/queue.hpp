@@ -14,13 +14,17 @@ class Queue {
     std::condition_variable cv_;
     bool closed_ = false;
 public:
-    void push(T&& item)
+    bool push(T&& item)
     {
         {
             std::unique_lock<std::mutex> lock(mutex_);
+            if (closed_) {
+                return false;
+            }
             queue_.push(std::move(item));
         }
         cv_.notify_one();
+        return true;
     }
 
     bool pop(T& item)
