@@ -76,8 +76,8 @@ RequestTarget::RequestTarget()
     : relative_path("")
 {}
 
-RequestTarget::RequestTarget(std::string&& relative_url)
-    : relative_path(url_decode(normalize_path(relative_url)))
+RequestTarget::RequestTarget(std::string&& rel_path)
+    : relative_path(rel_path)
 {}
 
 std::expected<RequestTarget, std::string> RequestTarget::from(std::string_view raw_target)
@@ -110,7 +110,14 @@ std::expected<RequestTarget, std::string> RequestTarget::from(std::string_view r
         buf = buf.substr(i + 1);
     }
 
-    return RequestTarget(std::string(buf));
+    std::string relative_path;
+    try {
+        relative_path = url_decode(normalize_path(std::string(buf)));
+    } catch (const std::exception&) {
+        return std::unexpected("Couldn't decode escape sequences in request target: " + std::string(raw_target));
+    }
+
+    return RequestTarget(std::move(relative_path));
 }
 
 } // end of `http` namespace

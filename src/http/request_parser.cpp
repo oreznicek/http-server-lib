@@ -86,8 +86,11 @@ std::expected<Request, ServerErr> RequestParser::parse_request(Connection& conn)
                 req.close = true;
             }
         } else if (key == header::kContentLength) {
-            // TODO: What if it is 0 or negative?
-            req.content_length = std::stoi(value);
+            try {
+                req.content_length = std::stoi(value);
+            } catch (const std::exception&) {
+                return std::unexpected(ServerErr(StatusCode::BadRequest, "Couldn't parse Content-Length"));
+            }
         }
     }
 
