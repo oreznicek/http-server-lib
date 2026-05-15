@@ -1,7 +1,7 @@
 ## Project proposal
 
-**Topic:** HTTP server library \
-**Description:** Implement a C++ library providing public API to create and run HTTP (1.1 version) server with custom options described [here](#customizable)
+ - **Topic:** HTTP server library
+ - **Description:** Implement a C++ library providing public API to create and run HTTP (1.1 version) server with custom options described [here](#customizable)
 
 ### Features
 
