@@ -27,6 +27,14 @@ inline constexpr std::string_view kServerHttpVersion = "HTTP/1.1";
 
 class Server;
 
+/**
+ * @brief Fluent interface for configuring and instantiating an HTTP Server.
+ *
+ * @details The Builder pattern separates the complex configuration of the server
+ *          from its execution. It provides sensible defaults (like using the hardware
+ *          thread count and standard security limits) but allows precise overriding
+ *          via method chaining.
+ */
 class ServerBuilder {
     handlers::Router router_;
     in_port_t port_ = kServerDefaultPort;
@@ -66,6 +74,14 @@ public:
     friend class Server;
 };
 
+/**
+ * @brief A high-performance, multi-threaded HTTP/1.1 Server.
+ *
+ * @details Manages the primary event loop, accepting incoming connections via a
+ *          `net::ServerSocket`, and immediately offloading the socket to a
+ *          concurrent worker pool. It is utilizing strict parsing limits
+ *          to prevent memory exhaustion.
+ */
 class Server {
     net::ServerSocket ssock_;
     RequestParser parser_;

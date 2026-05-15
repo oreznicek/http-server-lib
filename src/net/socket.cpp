@@ -1,5 +1,4 @@
 #include <stdexcept>
-#include <cerrno>
 #include <cstring>
 #include <format>
 
@@ -46,12 +45,14 @@ Socket::Socket(Protocol prot)
 Socket::Socket(int fd) : socket_fd_(fd)
 {}
 
+/// @brief Move constructor. Transfers ownership of the socket descriptor.
 Socket::Socket(Socket&& other) noexcept
     : socket_fd_(other.socket_fd_)
 {
     other.socket_fd_ = kInvalidSocketFd;
 }
 
+//// @brief Move assignment. Closes the current socket before acquiring the new one.
 Socket& Socket::operator=(Socket&& other) noexcept
 {
     if (this != &other) {
@@ -62,11 +63,13 @@ Socket& Socket::operator=(Socket&& other) noexcept
     return *this;
 }
 
+/// @brief Destructor. Automatically cleans up the socket if it is valid.
 Socket::~Socket()
 {
     close();
 }
 
+/// @brief Safely closes the socket file descriptor and handles OS-level errors.
 void Socket::close() noexcept
 {
     if (socket_fd_ == kInvalidSocketFd) {
@@ -79,7 +82,10 @@ void Socket::close() noexcept
     socket_fd_ = kInvalidSocketFd;
 }
 
-
+/**
+ * @brief Checks if the socket currently holds a valid file descriptor.
+ * @return true if valid, false if uninitialized or closed.
+ */
 bool Socket::is_valid()
 {
     return socket_fd_ != kInvalidSocketFd;
@@ -179,6 +185,12 @@ ClientSocket::ClientSocket(const SocketAddr6& sock_addr, const timeval* timeout)
     : ClientSocket(Protocol::Ipv6, sock_addr, timeout)
 {}
 
+/**
+ * @brief Creates a pair of connected sockets for inter-process communication.
+ * @details Primarily used on Linux via `socketpair(AF_UNIX)`. On Windows,
+ *          this may return uninitialized sockets depending on the implementation.
+ * @return A tuple containing the dialed socket and the answer socket.
+ */
 std::tuple<ClientSocket, ClientSocket> ClientSocket::create_socketpair()
 {
 #ifdef __linux__
@@ -197,6 +209,17 @@ std::tuple<ClientSocket, ClientSocket> ClientSocket::create_socketpair()
 #endif
 }
 
+/**
+ * @brief Polls the socket for incoming connection events.
+ *
+ * @details Blocks up to `kPollTimeout` milliseconds. If a connection arrives,
+ *          it automatically accepts it and returns a valid `ClientSocket`.
+ *
+ * @param sock_addr Buffer to hold the incoming client's IP address and port.
+ * @param timeout Optional receive timeout to apply to the newly accepted socket.
+ * @return A valid `ClientSocket` if a connection occurred, or an invalid/empty
+ *         `ClientSocket` if the poll timed out without any events.
+ */
 ClientSocket ServerSocket::poll(SocketAddr& sock_addr, const timeval* timeout)
 {
     int poll_result = POLL(&pfd_, 1, kPollTimeout);
@@ -225,12 +248,25 @@ ClientSocket ServerSocket::accept_connection(SocketAddr& sock_addr, const timeva
     return ClientSocket(fd, timeout);
 }
 
+/**
+ * @brief Reads data from the connected socket.
+ *
+ * @param buffer Pointer to the memory array where received data will be written.
+ * @param count Maximum number of bytes to read.
+ * @return The number of bytes actually received, 0 if the connection was closed,
+ *         or `kSocketError` on failure.
+ */
 int ClientSocket::recv(char* buffer, std::size_t count)
 {
     return ::recv(socket_fd_, buffer, count, 0);
 }
 
-// Returns if the write was successful
+/**
+ * @brief Writes data to the connected socket.
+ *
+ * @param buffer The string containing the payload to transmit.
+ * @return true if the send operation was successful, false otherwise.
+ */
 bool ClientSocket::send(const std::string& buffer)
 {
     int result = ::send(socket_fd_, buffer.c_str(), buffer.size(), 0);

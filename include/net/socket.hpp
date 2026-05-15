@@ -7,20 +7,30 @@
 #include "net/socket_addr.hpp"
 
 namespace http {
-class Server; // forward declaration
+    class Server; // forward declaration
 }
 
 namespace net {
 
+/**
+ * @brief Specifies the underlying network protocol family to use.
+ */
 enum class Protocol {
-    Ipv4,
-    Ipv6,
-    DualStack
+    Ipv4,      ///< Use IPv4 only.
+    Ipv6,      ///< Use IPv6 only.
+    DualStack  ///< Use a dual-stack socket capable of both IPv4 and IPv6.
 };
 
-/* Wrapper for unix socket */
+/**
+ * @brief Base class for socket resource management.
+ *
+ * @details Socket is a move-only type, meaning ownership of the underlying
+ *          socket can be transferred safely without double-closing
+ *          the file descriptor.
+ */
 class Socket {
 protected:
+    /// @brief The underlying OS socket file descriptor.
     socket_t socket_fd_;
     Socket();
     Socket(Protocol prot);
@@ -34,6 +44,13 @@ public:
     friend class ServerSocket;
 };
 
+/**
+ * @brief Represents an active, connected endpoint for network communication.
+ *
+ * @details Used to send and receive data over the network. It can be instantiated
+ *          directly to dial a remote server, or returned by a `ServerSocket`
+ *          when accepting an incoming connection.
+ */
 class ClientSocket : public Socket {
     ClientSocket(int fd);
     ClientSocket(Protocol prot, const SocketAddr& sock_addr, const timeval* timeout);
@@ -51,6 +68,13 @@ public:
     bool send(const std::string& buffer);
 };
 
+/**
+ * @brief Represents a passive socket that listens for incoming connections.
+ *
+ * @details Binds to a specific port and IP address, acting as the entry point
+ *          for an HTTP server. Uses non-blocking mechanisms like `poll()` to
+ *          safely wait for client connections.
+ */
 class ServerSocket : public Socket {
     static constexpr int kPollTimeout = 100; // ms
     pollfd pfd_;

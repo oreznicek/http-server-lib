@@ -2,6 +2,12 @@
 
 namespace http::mime {
 
+/**
+ * @brief Converts a strongly-typed MIME enum into its standard HTTP string representation.
+ *
+ * @param type The internal `Type` enum value.
+ * @return The exact string required for the HTTP "Content-Type" header (e.g., "application/json").
+ */
 std::string to_string(Type type)
 {
     switch (type) {
@@ -16,6 +22,17 @@ std::string to_string(Type type)
     }
 }
 
+/**
+ * @brief Determines the appropriate MIME type based on a file extension.
+ *
+ * @details Used primarily by the static file server to dynamically deduce
+ *          what type of file is being read from disk so the browser knows
+ *          how to render it.
+ *
+ * @param ext The file extension string, typically including the dot (e.g., ".css", ".html").
+ * @return The corresponding `Type` enum. If the extension is unrecognized,
+ *         it safely defaults to `Type::OctetStream`.
+ */
 Type extension_to_type(std::string_view ext)
 {
     if (ext == ".html" || ext == ".htm") return Type::TextHtml;

@@ -55,16 +55,42 @@ void detail::write(Level msg_lvl, std::string_view msg)
     }
 }
 
+/**
+ * @brief Configures global logging output formatting options.
+ *
+ * @param options An `Options` struct containing the desired boolean formatting flags.
+ */
 void set_options(Options&& options)
 {
     current_options = std::move(options);
 }
 
+/**
+ * @brief Sets the maximum verbosity level for the logger.
+ *
+ * @details The logger processes messages up to the specified level. Any log
+ *          messages that exceed this level of detail will be silently discarded.
+ *
+ * @note The default logging level is `Info`. This means `error()`, `warning()`,
+ *       and `info()` messages will be printed, but `debug()` messages will be
+ *       discarded.
+ *
+ * @param new_level The maximum logging level to process and output.
+ */
 void set_level(Level new_level)
 {
     current_level = new_level;
 }
 
+/**
+ * @brief Redirects log output to a specific file.
+ *
+ * @note By default, the logger acts as a console sink, writing all output directly
+ *          to stdout. Calling this function redirects all future log messages into
+ *          the specified file instead.
+ *
+ * @param filepath The absolute path where the log file will reside.
+ */
 void set_log_file(const std::string& filepath)
 {
     log_file.open(filepath, std::ios::app);

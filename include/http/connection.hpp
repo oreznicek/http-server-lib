@@ -10,6 +10,15 @@
 
 namespace http {
 
+/**
+ * @brief Manages an active HTTP client connection.
+ *
+ * @details This class wraps a raw `net::ClientSocket` and provides buffered,
+ *          stream-like reading capabilities. It internally manages leftover
+ *          bytes between read operations, allowing callers to safely parse
+ *          HTTP headers (using string delimiters) and HTTP bodies (using
+ *          fixed byte counts) without losing any incoming data.
+ */
 class Connection {
     static constexpr int CHUNK = 1024;
     net::ClientSocket csock_;

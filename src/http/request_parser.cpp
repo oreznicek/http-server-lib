@@ -7,12 +7,30 @@
 using namespace http;
 using namespace net;
 
+/**
+ * @brief Constructs a new Request Parser with strict security limits.
+ *
+ * @param headers_limit Max bytes allowed for the header section.
+ * @param body_limit Max bytes allowed for the request body payload.
+ * @param request_target_limit Max characters allowed in the URL path.
+ */
 RequestParser::RequestParser(std::size_t headers_limit, std::size_t body_limit, std::size_t request_target_limit)
     : Parser(headers_limit),
     body_limit_(body_limit),
     request_target_limit_(request_target_limit)
 {}
 
+/**
+ * @brief Parses the initial HTTP Request-Line.
+ *
+ * @details Extracts the HTTP Method, the Request Target, and the HTTP Version.
+ *          Updates the `req` object in place.
+ *
+ * @param req The HTTP request object being built.
+ * @param raw_buffer The string view containing the very first line of the request.
+ * @return A `std::string_view` of the *remaining* unparsed buffer, or a `ServerErr`
+ *         if the Request-Line is malformed or exceeds `request_target_limit_`.
+ */
 std::expected<std::string_view, ServerErr> RequestParser::parse_request_line(Request& req, std::string_view raw_buffer)
 {
     std::size_t i = raw_buffer.find(' ');
@@ -51,6 +69,13 @@ std::expected<std::string_view, ServerErr> RequestParser::parse_request_line(Req
     return raw_buffer;
 }
 
+/**
+ * @brief The primary entry point for processing an incoming client connection.
+ *
+ * @param conn The active network connection.
+ * @return A completely parsed and validated `Request` object ready for routing,
+ *         or a `ServerErr` on failure.
+ */
 std::expected<Request, ServerErr> RequestParser::parse_request(Connection& conn)
 {
     auto buffer = conn.read_until("\r\n\r\n", headers_limit_);

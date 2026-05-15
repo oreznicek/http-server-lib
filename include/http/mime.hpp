@@ -5,6 +5,7 @@
 
 namespace http::mime {
 
+/// @brief Represents the standard HTTP Media Types supported by the server.
 enum class Type {
     TextHtml,
     TextJavascript,

@@ -4,10 +4,23 @@
 
 using namespace http;
 
+/**
+ * @brief Initializes the base parser with specific security constraints.
+ * @param headers_limit The maximum byte size allowed for the HTTP headers.
+ */
 Parser::Parser(std::size_t headers_limit)
     : headers_limit_(headers_limit)
 {}
 
+/**
+ * @brief Parses a single raw HTTP header line.
+ *
+ * @details Splits a string like "Content-Type: text/html" into a key-value pair,
+ *          automatically converting the key to lowercase for case-insensitive lookups.
+ *
+ * @param line A single line of text from the HTTP header block (excluding CRLF).
+ * @return A parsed `Header` key-value pair, or a `ServerErr` if the syntax is invalid.
+ */
 std::expected<Header, ServerErr> Parser::parse_header(std::string_view line)
 {
     std::size_t i = line.find(':');
@@ -39,6 +52,16 @@ std::expected<Header, ServerErr> Parser::parse_header(std::string_view line)
     return std::make_pair(std::string(key), std::string(value));
 }
 
+/**
+ * @brief Parses an entire block of HTTP headers.
+ *
+ * @details Iterates through the raw header string, splitting by CRLF (\r\n),
+ *          and populating a map of headers. Enforces the `headers_limit_`
+ *          to ensure the buffer doesn't exceed safe boundaries.
+ *
+ * @param buffer The complete raw string view of the header section.
+ * @return A fully populated `Headers` map, or a `ServerErr` on failure.
+ */
 std::expected<Headers, ServerErr> Parser::parse_headers(std::string_view buffer)
 {
     Headers headers;

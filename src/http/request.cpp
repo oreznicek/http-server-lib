@@ -7,6 +7,11 @@
 namespace http {
 
 namespace method {
+    /**
+     * @brief Converts a raw string view from the network into a strongly-typed enum.
+     * @param str The parsed HTTP method string.
+     * @return The corresponding `RequestMethod`, or `RequestMethod::None` if unrecognized.
+     */
     RequestMethod from_string(std::string_view str) {
         if (str == kGet)    return RequestMethod::Get;
         if (str == kPost)   return RequestMethod::Post;
@@ -15,6 +20,11 @@ namespace method {
         return RequestMethod::None;
     }
 
+    /**
+     * @brief Converts a strongly-typed enum back into its string representation.
+     * @param method The internal method enum.
+     * @return The exact uppercase string required by the HTTP standard.
+     */
     std::string to_string(RequestMethod method) {
         switch (method) {
             case RequestMethod::Get:    return std::string(kGet);
@@ -72,6 +82,7 @@ static std::string normalize_path(const std::string& path)
     return normalized;
 }
 
+/// @brief Default constructor. Creates an empty target.
 RequestTarget::RequestTarget()
     : relative_path("")
 {}
@@ -80,6 +91,14 @@ RequestTarget::RequestTarget(std::string&& rel_path)
     : relative_path(rel_path)
 {}
 
+/**
+ * @brief Factory method to safely parse a raw URI string.
+ *
+ * @details Validates the target string and extracts the routing path.
+ *
+ * @param raw_target The raw target string from the Request-Line.
+ * @return A valid `RequestTarget` object, or an error string if parsing fails.
+ */
 std::expected<RequestTarget, std::string> RequestTarget::from(std::string_view raw_target)
 {
     static constexpr std::string_view kScheme = "http:";

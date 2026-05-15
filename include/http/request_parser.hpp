@@ -8,6 +8,14 @@
 
 namespace http {
 
+/**
+ * @brief Engine for constructing HTTP Requests from raw socket data.
+ *
+ * @details Inherits from the base `Parser` to reuse header logic. This class
+ *          interacts directly with the `Connection` object to progressively read
+ *          from the network buffer, parse the Request-Line, extract headers,
+ *          and finally pull exactly the right amount of bytes for the Request Body.
+ */
 class RequestParser : Parser {
     std::size_t body_limit_;
     std::size_t request_target_limit_;
