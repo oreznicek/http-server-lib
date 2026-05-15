@@ -1,5 +1,6 @@
 #include "http/server.hpp"
 #include "logger.hpp"
+#include "net/common.hpp"
 
 #include <exception>
 #include <stdexcept>
@@ -217,11 +218,11 @@ void Server::stop()
 /** @brief Retrieves the actual IPv4 address and port the server is bound to. */
 SocketAddr4 Server::get_addr()
 {
-    return SocketAddr4("127.0.0.1", ssock_.srv_port_);
+    return SocketAddr4(std::string(net::kLocalhostIpv4), ssock_.srv_port_);
 }
 
 /** @brief Retrieves the actual IPv6 address and port the server is bound to. */
 SocketAddr6 Server::get_addr6()
 {
-    return SocketAddr6("::1", ssock_.srv_port_);
+    return SocketAddr6(std::string(net::kLocalhostIpv6), ssock_.srv_port_);
 }

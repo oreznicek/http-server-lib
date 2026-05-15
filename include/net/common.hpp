@@ -62,6 +62,9 @@ constexpr int kSocketError = -1;
 
 namespace net {
 
+constexpr std::string_view kLocalhostIpv4 = "127.0.0.1";
+constexpr std::string_view kLocalhostIpv6 = "::1";
+
 /**
  * @brief Wrapper for global networking context initialization.
  *
