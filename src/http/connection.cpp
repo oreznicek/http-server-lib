@@ -10,9 +10,9 @@ using namespace http;
  */
 StatusCode Connection::read_chunk(std::string& buffer)
 {
-    buffer.resize(buffer.size() + CHUNK);
-    int bytes = csock_.recv(&buffer[buffer.size() - CHUNK], CHUNK);
-    buffer.resize(buffer.size() - CHUNK + std::max(0, bytes));
+    buffer.resize(buffer.size() + kChunk);
+    int bytes = csock_.recv(&buffer[buffer.size() - kChunk], kChunk);
+    buffer.resize(buffer.size() - kChunk + std::max(0, bytes));
     logger::debug("Connection.recv() -> {}", bytes);
 
     if (bytes < 0) {

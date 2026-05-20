@@ -20,7 +20,7 @@ namespace http {
  *          fixed byte counts) without losing any incoming data.
  */
 class Connection {
-    static constexpr int CHUNK = 1024;
+    static constexpr int kChunk = 1024;
     net::ClientSocket csock_;
     std::string leftover_;
     StatusCode read_chunk(std::string& buffer);
