@@ -42,7 +42,7 @@ Socket::Socket(Protocol prot)
     }
 }
 
-Socket::Socket(int fd) : socket_fd_(fd)
+Socket::Socket(socket_t fd) : socket_fd_(fd)
 {}
 
 /// @brief Move constructor. Transfers ownership of the socket descriptor.

@@ -34,7 +34,7 @@ protected:
     socket_t socket_fd_;
     Socket();
     Socket(Protocol prot);
-    Socket(int fd);
+    Socket(socket_t fd);
     void close() noexcept;
 public:
     Socket(Socket&& other) noexcept;
